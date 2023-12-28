@@ -1,0 +1,7 @@
+Verwaltungsgebiete mit Stand 31.12.2019
+ 
+- verwendet für Verschneidung der Gitterzellen mit Staatsgebiet
+- verwendet für Belegung des AGS in den Gittern 100 m und 250 m
+ 
+
+

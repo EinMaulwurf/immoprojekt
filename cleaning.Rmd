@@ -1,0 +1,89 @@
+---
+title: "Auswertung Immobilienmarkt"
+output: html_document
+date: "2023-11-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Libraries
+```{r message=FALSE}
+library(vroom)
+library(tidyverse)
+library(sf)
+```
+
+# Importing and cleaning data
+```{r}
+data_rent_complete <- vroom("./daten/Datensatz_Berlin_Rent_new.csv")
+data_social_complete <- vroom("./daten/Datensatz_Berlin_Social_new.csv", locale = locale(grouping_mark = ".", decimal_mark = ",", encoding = "UTF-8"))
+
+inspire_grid_complete <- st_read("./daten/INSPIRE_Grid/DE_Grid_ETRS89-LAEA_1km.gpkg/geogitter/DE_Grid_ETRS89-LAEA_1km.gpkg")
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
+  st_transform("EPSG:3035")
+```
+
+```{r}
+# Filtering inspire grid to only the squares that fit over Berlin
+# Create r1_id for filtering data_rent and data_social
+inspire_grid_berlin <- inspire_grid_complete %>%
+  filter(st_intersects(bezirksgrenzen_berlin %>% summarise(), inspire_grid_complete, sparse = FALSE)[1,]) %>%
+  mutate(r1_id = paste(x_sw / 1000, y_sw / 1000, sep = "_"))
+
+rm(inspire_grid_complete)
+
+st_write(inspire_grid_berlin, "./daten/inspire_grid_berlin.gpkg")
+
+r1_ids <- inspire_grid_berlin %>%
+  pull(r1_id) %>%
+  unique()
+
+ggplot()+
+  geom_sf(data = inspire_grid_berlin)+
+  geom_sf(data = bezirksgrenzen_berlin, fill = NA)
+```
+
+```{r}
+# Filtering data_rent
+data_rent <- data_rent_complete %>%
+  select(r1_id, mietekalt, wohnflaeche, jahr) %>%
+  filter(r1_id %in% r1_ids)
+
+rm(data_rent_complete)
+
+head(data_rent)
+```
+
+```{r}
+# Filtering data_social
+data_social <- data_social_complete %>%
+  select(r1_id, year, r1_mba_a_haushalt, r1_mps_p_obmittel, r1_mps_p_ober, r1_kkr_w_summe, r1_mbe_p_haustyp_1:r1_mbe_p_haustyp_6, r1_alq_p_quote, r1_met_p_deutschl, r1_mri_p_risiko_1:r1_mri_p_risiko_9, r1_eag_p_m60bis65:r1_eag_p_m75undgr, r1_eag_p_w60bis65:r1_eag_p_w75undgr) %>%
+  filter(r1_id %in% r1_ids) %>%
+  mutate_if(is.numeric, ~na_if(., -1)) %>%
+  mutate(anzahl_haushalte = r1_mba_a_haushalt,
+         arbeitslosenquote = r1_alq_p_quote,
+         anteil_oberklassewagen = r1_mps_p_ober + r1_mps_p_obmittel,
+         kaufkraft_pro_haushalt = r1_kkr_w_summe / r1_mba_a_haushalt,
+         anteil_efh = r1_mbe_p_haustyp_1 + r1_mbe_p_haustyp_2,
+         anteil_mfh = r1_mbe_p_haustyp_3 + r1_mbe_p_haustyp_4,
+         anteil_wohnblock = r1_mbe_p_haustyp_5 + r1_mbe_p_haustyp_6,
+         anteil_auslaender = 100 - r1_met_p_deutschl,
+         kreditrisiko = (r1_mri_p_risiko_1 * 1 + r1_mri_p_risiko_2 * 2 + r1_mri_p_risiko_3 * 3 + r1_mri_p_risiko_4 * 4 + r1_mri_p_risiko_5 * 5 + r1_mri_p_risiko_6 * 6 + r1_mri_p_risiko_7 * 7 + r1_mri_p_risiko_8 * 8 + r1_mri_p_risiko_9 * 9) / 900,
+         anteil_60_plus = r1_eag_p_m60bis65 + r1_eag_p_m65bis75 + r1_eag_p_m75undgr + r1_eag_p_w60bis65 + r1_eag_p_w65bis75 + r1_eag_p_w75undgr,
+         .keep = "unused")
+
+rm(data_social_complete)
+
+head(data_social)
+
+```
+
+```{r}
+# Saving cleaned data
+write_csv(data_rent, "./daten/data_rent.csv")
+write_csv(data_social, "./daten/data_social.csv")
+```
+
+
