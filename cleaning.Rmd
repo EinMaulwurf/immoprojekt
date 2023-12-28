@@ -38,7 +38,7 @@ inspire_grid_berlin <- inspire_grid_complete %>%
 rm(inspire_grid_complete)
 
 # Saving Berlin grid
-st_write(inspire_grid_berlin, "./daten/inspire_grid_berlin.gpkg")
+st_write(inspire_grid_berlin, "./daten/inspire_grid_berlin.gpkg", append = FALSE)
 
 # Plotting
 ggplot()+
@@ -71,7 +71,8 @@ data_social <- data_social_complete %>%
   select(r1_id, year, r1_mba_a_haushalt, r1_mps_p_obmittel, r1_mps_p_ober, r1_kkr_w_summe, r1_mbe_p_haustyp_1:r1_mbe_p_haustyp_6, r1_alq_p_quote, r1_met_p_deutschl, r1_mri_p_risiko_1:r1_mri_p_risiko_9, r1_eag_p_m60bis65:r1_eag_p_m75undgr, r1_eag_p_w60bis65:r1_eag_p_w75undgr) %>%
   filter(r1_id %in% r1_ids) %>%
   mutate_if(is.numeric, ~na_if(., -1)) %>%
-  mutate(anzahl_haushalte = r1_mba_a_haushalt,
+  mutate(jahr = year,
+         anzahl_haushalte = r1_mba_a_haushalt,
          arbeitslosenquote = r1_alq_p_quote,
          anteil_oberklassewagen = r1_mps_p_ober + r1_mps_p_obmittel,
          kaufkraft_pro_haushalt = r1_kkr_w_summe / r1_mba_a_haushalt,
