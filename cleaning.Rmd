@@ -20,29 +20,35 @@ library(sf)
 data_rent_complete <- vroom("./daten/Datensatz_Berlin_Rent_new.csv")
 data_social_complete <- vroom("./daten/Datensatz_Berlin_Social_new.csv", locale = locale(grouping_mark = ".", decimal_mark = ",", encoding = "UTF-8"))
 
+# Grid is from https://gdz.bkg.bund.de/index.php/default/inspire/sonstige-inspire-themen/geographische-gitter-fur-deutschland-in-lambert-projektion-geogitter-inspire.html
 inspire_grid_complete <- st_read("./daten/INSPIRE_Grid/DE_Grid_ETRS89-LAEA_1km.gpkg/geogitter/DE_Grid_ETRS89-LAEA_1km.gpkg")
+
+# Source: https://daten.odis-berlin.de/de/dataset/bezirksgrenzen/
 bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
   st_transform("EPSG:3035")
 ```
 
 ```{r}
 # Filtering inspire grid to only the squares that fit over Berlin
-# Create r1_id for filtering data_rent and data_social
 inspire_grid_berlin <- inspire_grid_complete %>%
   filter(st_intersects(bezirksgrenzen_berlin %>% summarise(), inspire_grid_complete, sparse = FALSE)[1,]) %>%
   mutate(r1_id = paste(x_sw / 1000, y_sw / 1000, sep = "_"))
 
+# Removing original data
 rm(inspire_grid_complete)
 
+# Saving Berlin grid
 st_write(inspire_grid_berlin, "./daten/inspire_grid_berlin.gpkg")
 
-r1_ids <- inspire_grid_berlin %>%
-  pull(r1_id) %>%
-  unique()
-
+# Plotting
 ggplot()+
   geom_sf(data = inspire_grid_berlin)+
   geom_sf(data = bezirksgrenzen_berlin, fill = NA)
+
+# Getting unique r1_ids for filtering
+r1_ids <- inspire_grid_berlin %>%
+  pull(r1_id) %>%
+  unique()
 ```
 
 ```{r}
@@ -51,13 +57,16 @@ data_rent <- data_rent_complete %>%
   select(r1_id, mietekalt, wohnflaeche, jahr) %>%
   filter(r1_id %in% r1_ids)
 
+# Removing original data
 rm(data_rent_complete)
 
+# Printing
 head(data_rent)
 ```
 
 ```{r}
 # Filtering data_social
+# Renaming and adding variables
 data_social <- data_social_complete %>%
   select(r1_id, year, r1_mba_a_haushalt, r1_mps_p_obmittel, r1_mps_p_ober, r1_kkr_w_summe, r1_mbe_p_haustyp_1:r1_mbe_p_haustyp_6, r1_alq_p_quote, r1_met_p_deutschl, r1_mri_p_risiko_1:r1_mri_p_risiko_9, r1_eag_p_m60bis65:r1_eag_p_m75undgr, r1_eag_p_w60bis65:r1_eag_p_w75undgr) %>%
   filter(r1_id %in% r1_ids) %>%
@@ -74,10 +83,11 @@ data_social <- data_social_complete %>%
          anteil_60_plus = r1_eag_p_m60bis65 + r1_eag_p_m65bis75 + r1_eag_p_m75undgr + r1_eag_p_w60bis65 + r1_eag_p_w65bis75 + r1_eag_p_w75undgr,
          .keep = "unused")
 
+# Removing the original data
 rm(data_social_complete)
 
+# Printing
 head(data_social)
-
 ```
 
 ```{r}
