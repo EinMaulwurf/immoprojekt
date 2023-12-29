@@ -84,6 +84,8 @@ k-means clustering mit den Variablen
 - anteil_efh
 - anteil_60_plus
 
+Es werden 4 Cluster verwendet. *Begründung*
+
 ```{r}
 data_clustering <- data_social %>%
   filter(jahr == 2015) %>%
@@ -107,9 +109,28 @@ data_social %>%
   theme_bw()
 ```
 
-Cluster sind sehr ähnlich zu den ![Wahlergebnissen Berlin 2016](https://img.welt.de/img/politik/deutschland/mobile158256707/6751622257-ci23x11-w2000/DWO-IP-WahlergebnisBerlin-js-eps.jpg)
+Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in Berlin 2016 ![Wahlergebnissen Berlin 2016](https://img.welt.de/img/politik/deutschland/mobile158256707/6751622257-ci23x11-w2000/DWO-IP-WahlergebnisBerlin-js-eps.jpg)
 
-Sind die Cluster über die Zeit stabil?
+Wer steckt hinter den Clustern? Um diese Frage zu beantworten können wir die Mittelwerte der jeweiligen Cluster betrachten.
+```{r}
+kmeans_result_2010$centers %>% t() %>% round(2)
+```
+
+Die Werte können nicht direkt interpretiert werden, da sie vorher durch `scale()` mittelwertbereinigt und varianzbereinigt wurden. Was aber interpretiert werden kann ist der Unterschied zwischen den Werten.
+
+Betrachten wir beispielsweise Cluster 3:
+
+- Die Anzahl der Haushalte ist am geringsten, das heißt pro Quadratkilometer wohnen hier weniger Menschen als in den anderen Teilen Berlins.
+- Die Arbeitslosenquote ist ebenfalls am kleinsten.
+- Die Kaufkraft pro Haushalt ist dagegen im Vergleich am größten, es handelt sich also um eine wohlhabende Gegend.
+- Der Anteil an Ausländern ist vergleichsweise klein, jedoch größer als in Cluster 1.
+- Die Anzahl der Einfamilienhäuser ist im Vergleich groß, aber kleiner als in Cluster 1.
+- Der Anteil der Bevölkerung über 60 Jahre ist ebenso mit Abstand am größten.
+
+Zusammenfassend könnte man Cluster 3 also als Ort bezeichnen, wo Reichtum, Ruhe und Rentner regieren!
+
+## Zeitliche Stabilität der Cluster
+Sind die Cluster über die Zeit stabil? Das ist wichtig falls wir Regressionen basierend auf diesen Clusterungen vornehmen.
 ```{r}
 # Split data by year
 data_clustering_year <- data_social %>%
@@ -186,3 +207,4 @@ data_social %>%
   theme_bw()
 ```
 
+**Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen.
