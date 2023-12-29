@@ -17,6 +17,7 @@ library(sf)
 ```
 
 # Importing data
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
 ```{r}
 data_rent <- vroom("./daten/data_rent.csv")
 data_social <- vroom("./daten/data_social.csv")
@@ -75,27 +76,108 @@ ggarrange(plot1,
 
 # Clustering
 k-means clustering mit den Variablen
+
 - arbeitslosenquote
-- anteil_oberklassewagen
+- anteil_oberklassewagen (NICHT MEHR, weil nicht für alle Jahre vorhanden)
 - kaufkraft_pro_haushalt
 - anteil_auslaender
 - anteil_efh
 - anteil_60_plus
+
 ```{r}
 data_clustering <- data_social %>%
   filter(jahr == 2015) %>%
   drop_na() %>%
-  select(anzahl_haushalte, arbeitslosenquote, anteil_oberklassewagen, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  select(anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   as.matrix() %>%
   scale()
 
 set.seed(1)
-kmeans_result <- kmeans(data_clustering, centers = 4)
+kmeans_result_2010 <- kmeans(data_clustering, centers = 4)
 
 data_social %>%
   filter(jahr == 2015) %>%
   drop_na() %>%
-  cbind(cluster = kmeans_result$cluster) %>%
+  cbind(cluster = kmeans_result_2010$cluster) %>%
+  mutate(cluster = as_factor(cluster)) %>%
+  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
+  st_as_sf() %>%
+  ggplot()+
+  geom_sf(aes(fill = cluster))+
+  theme_bw()
+```
+
+Cluster sind sehr ähnlich zu den ![Wahlergebnissen Berlin 2016](https://img.welt.de/img/politik/deutschland/mobile158256707/6751622257-ci23x11-w2000/DWO-IP-WahlergebnisBerlin-js-eps.jpg)
+
+Sind die Cluster über die Zeit stabil?
+```{r}
+# Split data by year
+data_clustering_year <- data_social %>%
+  select(jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  group_by(jahr) %>%
+  filter(jahr %in% c(2005, 2010, 2015, 2019)) %>%
+  group_split(.keep = FALSE)
+
+kmeans_result_2005 <- data_clustering_year[[1]] %>% as.matrix() %>% scale() %>%
+  kmeans(., centers = 4)
+kmeans_result_2005
+
+kmeans_result_2010 <- data_clustering_year[[2]] %>% as.matrix() %>% scale() %>%
+  kmeans(., centers = 4)
+kmeans_result_2010
+
+kmeans_result_2015 <- data_clustering_year[[3]] %>% as.matrix() %>% scale() %>%
+  kmeans(., centers = 4)
+kmeans_result_2015
+
+kmeans_result_2019 <- data_clustering_year[[4]] %>% as.matrix() %>% scale() %>%
+  kmeans(., centers = 4)
+kmeans_result_2019
+```
+
+```{r}
+data_social %>%
+  filter(jahr == 2005) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  cbind(cluster = kmeans_result_2005$cluster) %>%
+  mutate(cluster = as_factor(cluster)) %>%
+  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
+  st_as_sf() %>%
+  ggplot()+
+  geom_sf(aes(fill = cluster))+
+  theme_bw()
+
+data_social %>%
+  filter(jahr == 2010) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  cbind(cluster = kmeans_result_2010$cluster) %>%
+  mutate(cluster = as_factor(cluster)) %>%
+  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
+  st_as_sf() %>%
+  ggplot()+
+  geom_sf(aes(fill = cluster))+
+  theme_bw()
+
+data_social %>%
+  filter(jahr == 2015) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  cbind(cluster = kmeans_result_2015$cluster) %>%
+  mutate(cluster = as_factor(cluster)) %>%
+  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
+  st_as_sf() %>%
+  ggplot()+
+  geom_sf(aes(fill = cluster))+
+  theme_bw()
+
+data_social %>%
+  filter(jahr == 2019) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  cbind(cluster = kmeans_result_2019$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
