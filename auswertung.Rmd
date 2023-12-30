@@ -79,6 +79,71 @@ ggsave("./plots/plot_miete.pdf")
 
 ## Social Daten
 Wie sehen ausgewählte Social-Variablen auf einer Karte aus?
+```{r, fig.width=7.5, fig.height=2.5}
+# arbeitslosenquote, kaufkraft_pro_haushalt, anteil_60_plus, anteil_auslaender
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id")
+  
+plot1 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Arbeitslosenquote")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot2 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Kaufkraft")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot3 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(anteil_60_plus < 80) %>%
+  ggplot(aes(fill = anteil_60_plus, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil 60+")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot4 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_auslaender, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Ausländeranteil")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+
+ggsave("./plots/plot_data_social_2015.pdf")
+```
+
+```{r}
+data_social_sf %>%
+  arrange(desc(anteil_60_plus))
+```
+
 
 # Clustering
 k-means clustering mit den Variablen
@@ -148,23 +213,23 @@ data_clustering_year <- data_social %>%
 
 kmeans_result_2005 <- data_clustering_year[[1]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2005
+#kmeans_result_2005
 
 kmeans_result_2010 <- data_clustering_year[[2]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2010
+#kmeans_result_2010
 
 kmeans_result_2015 <- data_clustering_year[[3]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2015
+#kmeans_result_2015
 
 kmeans_result_2019 <- data_clustering_year[[4]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2019
+#kmeans_result_2019
 ```
 
-```{r}
-data_social %>%
+```{r, fig.width=7.5, fig.height=2.5}
+plot1 <- data_social %>%
   filter(jahr == 2005) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
@@ -173,10 +238,14 @@ data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2005")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-data_social %>%
+plot2 <- data_social %>%
   filter(jahr == 2010) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
@@ -185,10 +254,14 @@ data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2010")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-data_social %>%
+plot3 <- data_social %>%
   filter(jahr == 2015) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
@@ -197,10 +270,14 @@ data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2015")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-data_social %>%
+plot4 <- data_social %>%
   filter(jahr == 2019) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
@@ -209,8 +286,16 @@ data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2019")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
+
+ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+
+ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
 ```
 
-**Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen.
+**Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen. Wichtig ist, dass die Farbe der Cluster zwischen den Jahren nicht konstant ist. Es sollte also die Form der Cluster über die Jahre betrachtet werden. Statt 2020 wurde 2019 verwendet, da dies das letzte Jahr aus dem Datensatz ist.
