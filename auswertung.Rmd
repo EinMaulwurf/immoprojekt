@@ -83,7 +83,8 @@ Wie sehen ausgewählte Social-Variablen auf einer Karte aus?
 # arbeitslosenquote, kaufkraft_pro_haushalt, anteil_60_plus, anteil_auslaender
 
 data_social_sf <- data_social %>%
-  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id")
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
   
 plot1 <- data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -139,11 +140,6 @@ ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ggsave("./plots/plot_data_social_2015.pdf")
 ```
 
-```{r}
-data_social_sf %>%
-  arrange(desc(anteil_60_plus))
-```
-
 
 # Clustering
 k-means clustering mit den Variablen
@@ -155,7 +151,7 @@ k-means clustering mit den Variablen
 - anteil_efh
 - anteil_60_plus
 
-Es werden 4 Cluster verwendet. *Begründung*
+Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
 
 ```{r}
 data_clustering <- data_social %>%
@@ -229,14 +225,12 @@ kmeans_result_2019 <- data_clustering_year[[4]] %>% as.matrix() %>% scale() %>%
 ```
 
 ```{r, fig.width=7.5, fig.height=2.5}
-plot1 <- data_social %>%
+plot1 <- data_social_sf %>%
   filter(jahr == 2005) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2005$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
   geom_sf(aes(fill = cluster), linewidth = .1)+
   labs(subtitle = "Cluster in 2005")+
@@ -245,14 +239,12 @@ plot1 <- data_social %>%
         axis.text = element_blank(),
         axis.ticks = element_blank())
 
-plot2 <- data_social %>%
+plot2 <- data_social_sf %>%
   filter(jahr == 2010) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2010$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
   geom_sf(aes(fill = cluster), linewidth = .1)+
   labs(subtitle = "Cluster in 2010")+
@@ -261,14 +253,12 @@ plot2 <- data_social %>%
         axis.text = element_blank(),
         axis.ticks = element_blank())
 
-plot3 <- data_social %>%
+plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2015$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
   geom_sf(aes(fill = cluster), linewidth = .1)+
   labs(subtitle = "Cluster in 2015")+
@@ -277,14 +267,12 @@ plot3 <- data_social %>%
         axis.text = element_blank(),
         axis.ticks = element_blank())
 
-plot4 <- data_social %>%
+plot4 <- data_social_sf %>%
   filter(jahr == 2019) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2019$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
   geom_sf(aes(fill = cluster), linewidth = .1)+
   labs(subtitle = "Cluster in 2019")+
@@ -299,3 +287,94 @@ ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
 ```
 
 **Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen. Wichtig ist, dass die Farbe der Cluster zwischen den Jahren nicht konstant ist. Es sollte also die Form der Cluster über die Jahre betrachtet werden. Statt 2020 wurde 2019 verwendet, da dies das letzte Jahr aus dem Datensatz ist.
+
+# Regressionen
+
+## Miete über die Jahre
+Wie hat sich die Miete im Laufe der Jahre geändert?
+
+Um diese Frage zu beantworten schätzen wir das folgende Regressionsmodell: $\ln(\text{Kaltmiete pro Quadratmeter}_i) = \beta_0 + \beta_1 \cdot \text{jahr}_i + \epsilon_i$. Wir benutzen den Logarithmus, um um näher an eine Normalverteilung der Residuen (siehe unten) heranzukommen. Nur das erlaubt die Anwendung eines t-Tests zur Bestimmung der statistischen Signifikanz.
+```{r}
+lm_miete_jahr <- data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  lm(log(mietekalt_m2) ~ jahr, data = .)
+
+summary(lm_miete_jahr)
+```
+
+Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret wissen wir nun, dass die Miete pro Jahr im Schnitt um $\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt sich nicht sinnvoll interpretieren, dieser würde die Miete im Jahr 0 angeben. Interessant ist für uns noch der Wert der t-Statistik beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit, dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9 Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden allgemeinen Inflationsniveau von unter 2%.
+
+Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier der Einfachheit als Dichte dargestellt.
+
+```{r}
+lm_miete_jahr$residuals %>%
+  data.frame(residuals = .) %>%
+  ggplot(aes(x = residuals))+
+  geom_density(bw = .1)+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme_bw()+
+  labs(x = "Residuen", y = "Dichte")
+```
+
+Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
+
+```{r}
+data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(mietekalt_m2 = log(mietekalt_m2)) %>%
+  group_by(jahr) %>%
+  summarise(variance = var(mietekalt_m2)) %>%
+  round(2)
+```
+
+Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass die Varianz über die Jahre steigt, die Preise für Wohnungen streuen also immer weiter. Mathematisch bringt das Probleme mit der Robustheit der Schätzung, insbesondere kann dies zu Verzerrungne in den Standartfehlern führen. Diese werden wiederum für den t-Test und die Bestimmung der statistischen Signifikanz benötigt.
+
+Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standartfehler und Vergleichen die Ergebnisse mit der ursprünglichen Regression. Dafür wird eine "heteroskedasticity-consistent" (HC) Kovarianzmatrix geschätzt.
+
+```{r}
+library(sandwich)
+library(lmtest)
+coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
+```
+
+Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. ALlerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt.
+
+## Miete in "Brennpunkten" und Clustern
+
+Hat sich die Miete in Brennpunkten über die Jahre stärker erhöht?
+
+Hierzu müssen wir neben `data_rent` auch `data_social` verwenden. Wir definieren einen "Brennpunkt" als eine Gegend, in der die Arbeitslosenquote 2015 über 10% liegt und wo die Kaufkraft im unteren 20% Quantil liegt.
+
+Als Regressionsmodell verwenden wir **TODO…** mit einem Interaktionsterm zwischen dem Jahr und der binären Ist-Brennpunkt Variable.
+
+**TODO:** Erklären, wieso wir $jahr = jahr - 2007$ rechnen (um den Effekt von ist_brennpunkt und dem Intercept interpretieren zu können…)
+
+```{r}
+lm_miete_brennpunkt <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
+
+summary(lm_miete_brennpunkt)
+```
+
+**TODO** Interpretieren
+
+# Ideen, Testen & Ausprobieren
+
+```{r}
+1+1
+```
+
