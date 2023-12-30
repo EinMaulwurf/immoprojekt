@@ -113,6 +113,8 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 
 # Plotting
 
+## Rent Daten
+
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
 
 ``` r
@@ -162,6 +164,83 @@ ggarrange(plot1,
 
 ![](auswertung_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
+``` r
+ggsave("./plots/plot_miete.pdf")
+```
+
+    ## Saving 7.5 x 4.5 in image
+
+## Social Daten
+
+Wie sehen ausgewählte Social-Variablen auf einer Karte aus?
+
+``` r
+# arbeitslosenquote, kaufkraft_pro_haushalt, anteil_60_plus, anteil_auslaender
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+  
+plot1 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Arbeitslosenquote")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot2 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Kaufkraft")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot3 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(anteil_60_plus < 80) %>%
+  ggplot(aes(fill = anteil_60_plus, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil 60+")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+plot4 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_auslaender, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Ausländeranteil")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5))
+
+ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_data_social_2015.pdf")
+```
+
+    ## Saving 7.5 x 2.5 in image
+
 # Clustering
 
 k-means clustering mit den Variablen
@@ -174,7 +253,7 @@ k-means clustering mit den Variablen
 - anteil_efh
 - anteil_60_plus
 
-Es werden 4 Cluster verwendet. *Begründung*
+Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
 
 ``` r
 data_clustering <- data_social %>%
@@ -199,7 +278,7 @@ data_social %>%
   theme_bw()
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in
 Berlin 2016 ![Wahlergebnissen Berlin
@@ -258,286 +337,311 @@ data_clustering_year <- data_social %>%
 
 kmeans_result_2005 <- data_clustering_year[[1]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2005
-```
+#kmeans_result_2005
 
-    ## K-means clustering with 4 clusters of sizes 243, 84, 317, 218
-    ## 
-    ## Cluster means:
-    ##   anzahl_haushalte arbeitslosenquote kaufkraft_pro_haushalt anteil_auslaender
-    ## 1       -0.6621696        -0.2225145             -0.1705419        -0.6082571
-    ## 2        2.1854296         0.7578242             -0.6426050         2.0847126
-    ## 3        0.2194674         0.8174559             -0.6620805         0.1055497
-    ## 4       -0.4231195        -1.2326593              1.4004588        -0.2787551
-    ##   anteil_efh anteil_60_plus
-    ## 1  1.0676801    -0.09593607
-    ## 2 -1.0530196    -1.33133333
-    ## 3 -0.7898679    -0.22849071
-    ## 4  0.3641996     0.95218358
-    ## 
-    ## Clustering vector:
-    ##   [1] 4 1 1 1 4 4 4 1 1 1 1 1 4 1 4 4 4 4 4 4 3 1 1 1 1 1 4 1 1 1 4 4 4 4 4 4 4
-    ##  [38] 4 3 3 4 1 3 1 1 1 4 4 4 4 4 4 4 4 3 4 4 3 3 1 4 1 4 4 4 4 4 4 4 4 4 4 4 3
-    ##  [75] 3 3 3 3 4 4 4 4 4 4 4 4 3 3 3 3 3 3 1 1 1 4 4 4 4 4 4 3 3 3 2 3 3 4 1 4 4
-    ## [112] 4 3 4 4 4 4 4 4 3 3 3 3 3 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 3 3 1 1 4 4 4 4 4
-    ## [149] 4 4 4 4 4 4 4 4 4 4 4 4 4 1 3 1 4 4 4 4 3 3 4 4 4 4 4 4 4 4 4 4 1 3 3 1 1
-    ## [186] 3 4 4 4 4 4 3 4 4 4 3 4 4 4 4 4 4 4 3 3 3 3 3 1 4 3 3 4 4 4 4 4 4 4 4 1 4
-    ## [223] 4 4 4 4 4 4 4 3 2 2 2 2 3 3 3 3 3 3 3 4 4 4 4 4 4 4 1 4 4 4 4 4 4 4 3 3 3
-    ## [260] 2 2 2 2 3 3 3 3 2 3 4 4 4 4 4 1 1 3 3 3 4 3 3 2 2 2 2 2 2 3 2 2 3 1 3 3 3
-    ## [297] 3 3 3 4 4 4 4 4 4 3 3 2 2 3 2 2 3 3 2 2 3 2 3 3 3 3 3 3 4 4 3 4 4 3 3 3 3
-    ## [334] 2 2 2 2 2 3 2 2 2 2 3 3 3 3 3 3 4 4 4 3 3 3 3 4 4 3 3 3 2 2 2 2 3 3 2 2 2
-    ## [371] 2 3 3 3 3 4 1 1 4 4 4 4 3 3 3 2 3 3 2 2 2 3 3 3 2 2 2 3 1 3 1 1 1 1 1 1 1
-    ## [408] 4 4 4 4 4 4 3 3 3 3 3 2 2 2 3 3 2 2 2 3 3 3 3 3 1 1 1 1 4 3 3 4 4 4 4 3 4
-    ## [445] 3 3 2 2 2 3 3 2 2 2 2 3 3 3 1 3 3 1 4 4 3 1 4 4 4 4 1 3 2 2 2 2 2 3 3 2 2
-    ## [482] 2 3 3 3 3 1 3 1 1 3 4 4 3 3 3 1 3 3 3 2 2 2 2 2 3 3 3 3 3 3 1 1 1 1 1 1 3
-    ## [519] 1 1 1 3 3 3 3 3 2 2 2 3 3 2 2 3 3 3 3 1 1 1 1 1 1 1 3 3 3 4 3 2 2 3 3 3 2
-    ## [556] 2 3 3 3 3 3 1 3 1 1 1 3 3 3 3 4 4 3 4 4 1 3 3 3 3 3 3 3 3 3 3 3 3 3 3 1 1
-    ## [593] 3 3 3 3 1 1 4 4 4 4 3 1 3 3 3 1 3 3 3 3 3 3 3 1 3 3 3 1 3 3 1 1 3 4 3 1 3
-    ## [630] 3 3 3 1 3 3 3 3 3 3 3 3 3 3 3 1 1 1 1 3 1 1 1 3 3 3 3 1 3 3 3 3 1 3 3 3 3
-    ## [667] 3 1 1 1 3 1 3 1 3 1 3 3 1 1 3 1 1 3 3 3 3 3 3 3 3 1 1 1 3 1 3 1 1 1 1 1 1
-    ## [704] 1 3 3 3 3 3 1 1 1 1 1 1 3 3 3 3 1 1 1 1 1 3 3 1 3 3 3 3 1 1 1 3 3 3 3 3 3
-    ## [741] 1 1 1 1 1 3 3 3 3 3 1 1 1 1 1 4 3 3 3 3 1 1 1 1 1 1 1 1 3 3 1 1 3 3 1 1 1
-    ## [778] 1 1 1 1 1 3 3 1 1 1 4 3 3 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-    ## [815] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-    ## [852] 1 1 1 1 1 1 1 1 1 1 1
-    ## 
-    ## Within cluster sum of squares by cluster:
-    ## [1] 342.0588 409.9767 850.0412 352.6684
-    ##  (between_SS / total_SS =  62.2 %)
-    ## 
-    ## Available components:
-    ## 
-    ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
-    ## [6] "betweenss"    "size"         "iter"         "ifault"
-
-``` r
 kmeans_result_2010 <- data_clustering_year[[2]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2010
-```
+#kmeans_result_2010
 
-    ## K-means clustering with 4 clusters of sizes 307, 87, 273, 202
-    ## 
-    ## Cluster means:
-    ##   anzahl_haushalte arbeitslosenquote kaufkraft_pro_haushalt anteil_auslaender
-    ## 1        0.2502852         0.8253712             -0.6107010        0.09638109
-    ## 2        2.1174532         0.7781072             -0.6653026        2.10019315
-    ## 3       -0.4833194        -1.0668643              1.2155056       -0.34103417
-    ## 4       -0.6391574        -0.1476750             -0.4280518       -0.59011620
-    ##   anteil_efh anteil_60_plus
-    ## 1 -0.8072081     -0.1877075
-    ## 2 -1.0866212     -1.3798540
-    ## 3  0.4457675      0.7770569
-    ## 4  1.0923486     -0.1706091
-    ## 
-    ## Clustering vector:
-    ##   [1] 3 3 3 3 3 3 3 3 4 4 4 4 3 3 3 3 3 3 3 3 3 3 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3
-    ##  [38] 3 3 3 1 1 3 3 1 4 4 4 3 3 3 3 3 3 3 3 1 3 3 1 1 3 3 3 3 3 3 3 3 3 3 3 3 3
-    ##  [75] 3 1 1 1 1 1 3 3 3 3 3 3 3 3 3 1 1 1 1 1 1 4 4 4 3 3 3 3 3 3 3 1 1 1 2 1 1
-    ## [112] 4 4 3 3 3 1 3 3 3 3 3 3 1 1 1 1 1 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 1 1 4 4 3
-    ## [149] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 1 4 3 3 3 3 1 1 3 3 3 3 3 3 3 3 3 3 4
-    ## [186] 1 1 4 3 1 3 3 3 3 3 4 3 3 3 1 3 3 3 3 3 3 3 1 1 1 1 1 4 3 1 1 3 3 3 3 3 3
-    ## [223] 3 3 3 3 3 3 3 3 3 3 3 1 2 2 2 2 1 1 1 1 1 1 1 3 3 3 3 3 3 3 3 3 3 3 3 3 3
-    ## [260] 3 1 1 1 2 2 2 2 1 1 1 1 2 1 3 3 3 3 3 3 3 1 1 1 3 1 1 2 2 2 2 2 2 1 2 2 1
-    ## [297] 4 1 1 1 1 1 1 3 3 3 3 1 3 1 1 2 2 1 2 2 1 1 2 2 1 2 1 1 1 1 1 1 3 3 1 3 3
-    ## [334] 1 1 1 1 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 3 3 3 1 1 1 1 3 3 1 1 2 2 2 2 2 1
-    ## [371] 1 2 2 2 2 1 1 1 1 3 4 4 3 3 3 3 1 1 1 2 1 1 2 2 2 1 1 1 2 2 2 2 4 1 4 4 4
-    ## [408] 4 4 3 4 3 3 3 3 3 3 1 1 1 1 1 2 2 2 1 1 2 2 2 1 1 1 1 1 4 4 4 4 3 1 1 3 3
-    ## [445] 3 3 1 3 1 1 2 2 2 1 1 2 2 2 2 1 1 1 4 1 1 4 3 3 1 1 3 3 3 3 4 1 2 2 2 2 2
-    ## [482] 1 1 2 2 2 1 1 1 1 4 1 4 4 1 3 3 1 1 1 4 1 1 1 2 2 2 2 2 1 1 1 1 1 1 4 4 4
-    ## [519] 4 4 4 1 4 4 3 1 1 1 1 1 2 2 2 1 1 2 2 1 1 1 1 4 4 4 4 4 4 4 1 1 1 3 4 2 2
-    ## [556] 1 1 1 2 2 1 1 1 1 1 4 1 4 4 4 4 1 1 1 3 3 1 3 3 4 1 1 1 1 4 1 1 1 1 1 1 1
-    ## [593] 1 1 4 4 4 1 1 1 4 4 3 3 3 3 1 4 4 1 1 4 1 1 1 1 1 1 1 4 1 1 1 4 4 1 1 4 3
-    ## [630] 1 3 1 4 1 1 1 1 4 1 1 1 1 1 1 1 1 1 1 1 4 4 3 3 1 4 4 4 1 1 1 1 4 1 1 1 1
-    ## [667] 4 1 1 1 1 1 1 4 4 4 1 4 4 4 1 4 1 1 4 4 1 4 4 4 1 1 1 1 1 1 1 4 4 4 1 4 1
-    ## [704] 4 4 4 4 4 4 4 1 1 1 1 1 4 4 4 4 4 4 1 1 1 1 4 4 4 4 4 1 1 4 1 1 1 1 4 4 4
-    ## [741] 1 1 1 1 1 1 4 4 4 4 4 1 1 1 1 4 3 4 4 4 4 4 1 1 1 1 4 4 4 4 4 4 4 4 1 1 3
-    ## [778] 4 1 1 4 4 4 4 4 4 4 4 1 1 3 4 3 3 1 1 4 3 3 4 4 4 4 4 3 4 3 3 3 3 3 3 3 3
-    ## [815] 4 4 3 4 4 3 4 4 4 4 4 4 3 3 3 3 4 4 4 4 3 4 4 4 4 4 3 3 4 4 4 4 4 3 3 4 4
-    ## [852] 4 4 4 4 4 3 4 4 4 4 4 3 3 3 3 3 3 4
-    ## 
-    ## Within cluster sum of squares by cluster:
-    ## [1] 795.2194 421.9088 511.4863 319.5616
-    ##  (between_SS / total_SS =  60.7 %)
-    ## 
-    ## Available components:
-    ## 
-    ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
-    ## [6] "betweenss"    "size"         "iter"         "ifault"
-
-``` r
 kmeans_result_2015 <- data_clustering_year[[3]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2015
-```
+#kmeans_result_2015
 
-    ## K-means clustering with 4 clusters of sizes 292, 87, 189, 303
-    ## 
-    ## Cluster means:
-    ##   anzahl_haushalte arbeitslosenquote kaufkraft_pro_haushalt anteil_auslaender
-    ## 1       -0.5275400       -1.02456040              1.0158465        -0.4188556
-    ## 2        2.1218564        0.79041120             -0.6721937         2.0997909
-    ## 3       -0.6249953       -0.05486627             -0.2597958        -0.5259136
-    ## 4        0.2889911        0.79463890             -0.6239107         0.1287845
-    ##   anteil_efh anteil_60_plus
-    ## 1  0.5244351      0.7232695
-    ## 2 -1.1115538     -1.4309665
-    ## 3  1.0335675     -0.1277273
-    ## 4 -0.8309378     -0.2064691
-    ## 
-    ## Clustering vector:
-    ##   [1] 1 1 3 1 1 1 1 1 1 3 3 3 1 1 1 1 1 1 1 1 3 1 3 3 3 3 1 3 1 1 1 1 1 1 1 1 1
-    ##  [38] 1 1 1 3 4 1 3 4 1 1 1 1 1 1 1 1 1 3 1 4 1 1 4 4 1 1 1 1 1 4 1 1 1 1 1 1 1
-    ##  [75] 1 4 4 4 4 4 1 1 1 1 1 1 1 1 4 4 4 4 4 4 3 3 1 1 1 1 1 1 1 4 4 4 2 4 4 3 3
-    ## [112] 3 1 1 4 1 1 1 1 1 1 4 3 4 4 4 3 1 1 3 1 1 1 1 1 1 1 1 1 1 1 1 4 3 3 1 1 1
-    ## [149] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 4 3 4 3 4 1 1 1 1 1 1 4 1 1 1 1 1 1 1 1 1 4 3
-    ## [186] 4 4 3 1 4 1 1 1 1 1 1 1 4 1 1 4 1 1 1 1 1 1 1 4 4 4 4 4 3 1 4 4 1 1 1 1 1
-    ## [223] 1 1 1 1 1 1 1 1 1 1 1 4 4 2 2 2 2 4 4 4 3 4 4 4 1 1 1 1 1 1 1 1 1 1 1 1 1
-    ## [260] 1 1 4 4 4 2 2 2 2 4 4 4 4 2 4 3 3 1 1 1 1 1 4 4 4 4 4 4 2 2 2 2 2 2 4 2 2
-    ## [297] 4 3 4 4 4 4 4 4 1 1 1 1 4 4 4 4 2 2 4 2 2 4 4 2 2 4 2 4 4 4 4 4 4 1 1 4 1
-    ## [334] 1 4 4 4 4 2 2 2 2 2 2 2 2 2 2 4 4 4 4 4 4 3 1 3 4 4 4 4 1 4 4 4 2 2 2 2 2
-    ## [371] 4 4 2 2 2 2 4 4 4 3 1 3 1 1 1 1 4 4 4 4 2 4 4 2 2 2 4 4 4 2 2 2 2 3 4 3 3
-    ## [408] 3 3 3 1 1 1 1 1 1 4 1 4 4 4 4 4 2 2 2 4 4 2 2 2 4 4 4 4 4 3 3 3 3 1 4 4 1
-    ## [445] 4 1 1 4 4 4 4 2 2 2 4 4 2 2 2 2 4 4 4 3 3 4 3 1 1 4 4 1 1 1 1 3 4 2 2 2 2
-    ## [482] 2 4 4 2 2 2 4 4 4 4 3 3 3 3 3 1 1 4 4 4 3 4 4 4 2 2 2 2 2 4 4 4 4 4 4 3 3
-    ## [519] 3 3 3 3 3 3 1 1 4 4 4 4 4 2 2 2 4 4 2 2 4 4 4 4 3 3 3 3 3 3 3 4 4 4 3 3 2
-    ## [556] 2 4 4 4 2 2 4 4 4 4 3 3 4 3 3 3 3 4 4 4 1 1 4 1 1 3 4 4 4 4 3 4 4 4 4 4 4
-    ## [593] 3 4 4 3 3 3 4 4 4 3 1 1 4 1 1 3 3 4 4 3 4 4 4 4 4 4 4 3 4 4 4 1 1 4 1 1 1
-    ## [630] 4 1 4 3 4 4 4 4 3 4 4 4 4 3 4 4 4 4 4 4 3 1 1 1 4 3 3 3 4 4 4 4 3 4 4 4 4
-    ## [667] 3 4 4 4 3 4 4 3 3 1 4 3 3 3 4 3 4 4 3 3 1 3 3 3 4 4 4 4 4 4 4 3 3 3 4 3 4
-    ## [704] 1 3 3 3 3 1 3 4 4 4 4 4 1 3 3 1 3 3 4 4 4 4 3 3 3 3 3 4 4 3 4 4 4 4 3 3 3
-    ## [741] 4 4 4 4 4 4 1 3 3 3 3 4 4 4 4 1 1 3 3 3 3 1 4 4 4 1 3 3 3 3 3 3 3 3 4 4 1
-    ## [778] 3 4 4 3 3 1 3 3 3 3 3 4 4 1 3 1 1 4 4 3 1 1 1 3 3 3 3 1 1 1 1 1 1 1 1 1 1
-    ## [815] 1 3 1 3 1 1 3 3 1 3 3 3 3 1 1 1 1 1 3 3 3 3 1 3 3 3 3 3 1 1 3 3 3 3 3 1 1
-    ## [852] 3 1 3 1 1 3 3 1 1 1 1 1 1 1 1 1 1 1 1 1
-    ## 
-    ## Within cluster sum of squares by cluster:
-    ## [1] 663.9327 409.2262 314.0620 798.6406
-    ##  (between_SS / total_SS =  58.1 %)
-    ## 
-    ## Available components:
-    ## 
-    ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
-    ## [6] "betweenss"    "size"         "iter"         "ifault"
-
-``` r
 kmeans_result_2019 <- data_clustering_year[[4]] %>% as.matrix() %>% scale() %>%
   kmeans(., centers = 4)
-kmeans_result_2019
+#kmeans_result_2019
 ```
 
-    ## K-means clustering with 4 clusters of sizes 186, 290, 247, 162
-    ## 
-    ## Cluster means:
-    ##   anzahl_haushalte arbeitslosenquote kaufkraft_pro_haushalt anteil_auslaender
-    ## 1       1.42241058         1.0011744             -0.6865915         1.2282912
-    ## 2      -0.56829919        -0.9887374              0.9665603        -0.6838366
-    ## 3       0.01061176         0.3202680             -0.2533809         0.2475437
-    ## 4      -0.63199203         0.1321555             -0.5556259        -0.5635360
-    ##   anteil_efh anteil_60_plus
-    ## 1 -1.0901712     -1.1556239
-    ## 2  0.7954763      0.6021112
-    ## 3 -0.6809559      0.3517754
-    ## 4  0.8659248     -0.2873750
-    ## 
-    ## Clustering vector:
-    ##   [1] 2 4 2 4 2 2 2 2 2 2 4 4 2 2 2 2 2 2 2 2 2 2 2 2 4 4 2 4 2 4 2 2 4 4 2 2 2
-    ##  [38] 2 2 2 2 2 4 3 2 3 3 2 2 2 4 2 2 3 3 2 4 2 2 2 1 3 2 3 3 2 4 2 2 2 3 3 2 2
-    ##  [75] 2 2 2 2 2 1 3 3 1 3 2 2 2 2 2 2 2 2 2 1 1 1 1 3 3 3 4 4 2 2 2 2 4 2 2 1 1
-    ## [112] 1 1 1 3 4 4 4 2 2 2 2 2 2 2 2 3 3 3 1 1 3 4 2 2 4 2 2 2 2 3 2 2 3 3 3 3 4
-    ## [149] 3 1 4 4 2 2 2 2 2 2 2 2 2 2 2 3 2 4 3 2 3 3 3 3 4 4 2 2 2 2 2 2 3 2 3 3 2
-    ## [186] 3 3 3 4 3 3 4 1 3 4 2 3 3 2 2 2 2 2 3 2 2 3 2 3 3 2 3 3 3 3 3 3 3 3 4 2 3
-    ## [223] 1 2 2 2 2 2 2 2 2 2 4 2 2 3 2 2 3 3 3 1 1 1 1 3 3 3 3 4 3 3 2 2 2 2 2 2 2
-    ## [260] 2 2 3 3 3 3 3 3 3 3 3 1 1 1 1 1 3 3 3 1 3 3 3 2 2 2 2 2 3 3 3 3 3 1 1 1 1
-    ## [297] 1 1 1 1 1 1 4 4 3 1 3 3 3 3 2 2 2 2 3 3 3 1 1 1 1 1 1 3 3 1 1 1 1 1 3 3 3
-    ## [334] 1 3 2 2 3 3 3 1 3 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 3 1 1 2 2 2 3 3 3 3 3 3 3
-    ## [371] 3 1 1 1 1 1 1 1 1 1 1 1 3 3 3 4 2 4 4 2 3 3 2 3 3 1 1 1 1 3 1 1 1 3 1 1 1
-    ## [408] 1 1 1 2 3 4 4 4 4 4 2 2 2 2 2 2 3 2 3 3 3 3 1 1 1 1 3 1 1 1 1 1 1 3 1 4 4
-    ## [445] 4 4 4 2 3 3 2 3 3 2 3 3 3 3 1 1 1 3 1 1 1 1 1 1 3 3 4 4 3 4 3 3 3 3 3 3 2
-    ## [482] 2 4 1 1 1 1 1 1 3 3 1 1 1 1 3 3 3 4 4 4 4 4 4 2 2 3 3 3 3 3 3 1 1 1 1 1 1
-    ## [519] 1 1 1 1 1 3 4 2 4 4 4 4 4 4 2 2 3 3 3 3 3 1 1 1 1 1 1 1 3 3 1 3 4 2 4 4 4
-    ## [556] 2 4 1 1 3 3 4 1 1 3 1 1 1 1 1 3 3 3 4 2 4 4 4 4 4 3 3 4 2 2 1 2 2 4 3 3 3
-    ## [593] 3 4 1 1 1 3 1 3 3 4 3 4 4 4 3 3 3 2 4 4 2 2 3 2 3 4 3 3 4 4 3 1 1 3 1 1 3
-    ## [630] 4 1 1 4 2 2 3 3 2 2 3 2 3 4 3 3 3 1 4 3 3 3 3 4 1 4 4 4 1 1 4 2 2 2 3 4 4
-    ## [667] 4 4 3 3 3 4 3 3 3 1 4 3 3 4 4 1 4 4 4 2 3 4 4 4 3 2 3 3 4 4 2 2 4 4 1 3 1
-    ## [704] 3 1 4 3 4 4 4 4 3 4 3 3 2 2 2 2 4 2 2 3 1 1 1 1 2 4 2 2 4 4 3 3 3 3 4 2 2
-    ## [741] 4 4 3 3 2 3 1 1 1 4 2 2 3 3 4 1 3 3 2 2 2 2 2 1 1 1 1 2 2 2 4 4 2 2 3 3 3
-    ## [778] 3 2 2 2 2 4 2 4 4 1 1 2 2 3 3 4 2 2 2 2 2 2 4 1 1 2 2 2 2 3 3 4 2 2 2 2 2
-    ## [815] 2 2 2 2 2 2 2 2 2 2 2 2 3 4 2 2 2 2 4 4 2 4 4 4 4 2 2 2 2 4 4 4 4 4 2 4 3
-    ## [852] 4 4 4 4 4 2 2 4 2 4 4 2 2 2 2 4 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
-    ## 
-    ## Within cluster sum of squares by cluster:
-    ## [1] 679.0454 638.8289 611.9139 396.0472
-    ##  (between_SS / total_SS =  56.1 %)
-    ## 
-    ## Available components:
-    ## 
-    ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
-    ## [6] "betweenss"    "size"         "iter"         "ifault"
-
 ``` r
-data_social %>%
+plot1 <- data_social_sf %>%
   filter(jahr == 2005) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2005$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
-```
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2005")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-![](auswertung_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-``` r
-data_social %>%
+plot2 <- data_social_sf %>%
   filter(jahr == 2010) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2010$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
-```
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2010")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-![](auswertung_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
-
-``` r
-data_social %>%
+plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2015$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
-```
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2015")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
 
-![](auswertung_files/figure-gfm/unnamed-chunk-7-3.png)<!-- -->
-
-``` r
-data_social %>%
+plot4 <- data_social_sf %>%
   filter(jahr == 2019) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   cbind(cluster = kmeans_result_2019$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
-  left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
-  st_as_sf() %>%
   ggplot()+
-  geom_sf(aes(fill = cluster))+
-  theme_bw()
+  geom_sf(aes(fill = cluster), linewidth = .1)+
+  labs(subtitle = "Cluster in 2019")+
+  theme_bw()+
+  theme(legend.position = "none",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
+
+ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-7-4.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
+```
+
+    ## Saving 7.5 x 2.5 in image
 
 **Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in
 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen.
+Wichtig ist, dass die Farbe der Cluster zwischen den Jahren nicht
+konstant ist. Es sollte also die Form der Cluster über die Jahre
+betrachtet werden. Statt 2020 wurde 2019 verwendet, da dies das letzte
+Jahr aus dem Datensatz ist.
+
+# Regressionen
+
+## Miete über die Jahre
+
+Wie hat sich die Miete im Laufe der Jahre geändert?
+
+Um diese Frage zu beantworten schätzen wir das folgende
+Regressionsmodell:
+$\ln(\text{Kaltmiete pro Quadratmeter}_i) = \beta_0 + \beta_1 \cdot \text{jahr}_i + \epsilon_i$.
+Wir benutzen den Logarithmus, um um näher an eine Normalverteilung der
+Residuen (siehe unten) heranzukommen. Nur das erlaubt die Anwendung
+eines t-Tests zur Bestimmung der statistischen Signifikanz.
+
+``` r
+lm_miete_jahr <- data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  lm(log(mietekalt_m2) ~ jahr, data = .)
+
+summary(lm_miete_jahr)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = log(mietekalt_m2) ~ jahr, data = .)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.23383 -0.18964 -0.02218  0.17442  1.42756 
+    ## 
+    ## Coefficients:
+    ##               Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept) -1.190e+02  1.048e-01   -1135   <2e-16 ***
+    ## jahr         6.015e-02  5.210e-05    1154   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.2789 on 1880313 degrees of freedom
+    ## Multiple R-squared:  0.4148, Adjusted R-squared:  0.4148 
+    ## F-statistic: 1.333e+06 on 1 and 1880313 DF,  p-value: < 2.2e-16
+
+Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot
+oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret
+wissen wir nun, dass die Miete pro Jahr im Schnitt um
+$\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt
+sich nicht sinnvoll interpretieren, dieser würde die Miete im Jahr 0
+angeben. Interessant ist für uns noch der Wert der t-Statistik
+beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke
+statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit,
+dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst
+gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9
+Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist
+es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu
+achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch
+relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden
+allgemeinen Inflationsniveau von unter 2%.
+
+Zunächst wollen wir noch die Robustheit der Regression überprüfen um
+Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis
+liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier
+der Einfachheit als Dichte dargestellt.
+
+``` r
+lm_miete_jahr$residuals %>%
+  data.frame(residuals = .) %>%
+  ggplot(aes(x = residuals))+
+  geom_density(bw = .1)+
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+  theme_bw()+
+  labs(x = "Residuen", y = "Dichte")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
+
+``` r
+data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(mietekalt_m2 = log(mietekalt_m2)) %>%
+  group_by(jahr) %>%
+  summarise(variance = var(mietekalt_m2)) %>%
+  round(2)
+```
+
+    ## # A tibble: 15 × 2
+    ##     jahr variance
+    ##    <dbl>    <dbl>
+    ##  1  2007     0.06
+    ##  2  2008     0.06
+    ##  3  2009     0.06
+    ##  4  2010     0.07
+    ##  5  2011     0.07
+    ##  6  2012     0.08
+    ##  7  2013     0.08
+    ##  8  2014     0.09
+    ##  9  2015     0.08
+    ## 10  2016     0.09
+    ## 11  2017     0.09
+    ## 12  2018     0.09
+    ## 13  2019     0.11
+    ## 14  2020     0.15
+    ## 15  2021     0.16
+
+Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen
+von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass
+die Varianz über die Jahre steigt, die Preise für Wohnungen streuen also
+immer weiter. Mathematisch bringt das Probleme mit der Robustheit der
+Schätzung, insbesondere kann dies zu Verzerrungne in den Standartfehlern
+führen. Diese werden wiederum für den t-Test und die Bestimmung der
+statistischen Signifikanz benötigt.
+
+Um dieses Problem zu umgehen, berechnen wir im folgenden robuste
+Standartfehler und Vergleichen die Ergebnisse mit der ursprünglichen
+Regression. Dafür wird eine “heteroskedasticity-consistent” (HC)
+Kovarianzmatrix geschätzt.
+
+``` r
+library(sandwich)
+library(lmtest)
+```
+
+    ## Loading required package: zoo
+
+    ## 
+    ## Attaching package: 'zoo'
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     as.Date, as.Date.numeric
+
+``` r
+coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
+```
+
+    ## 
+    ## t test of coefficients:
+    ## 
+    ##                Estimate  Std. Error t value  Pr(>|t|)    
+    ## (Intercept) -1.1902e+02  1.1534e-01 -1031.9 < 2.2e-16 ***
+    ## jahr         6.0150e-02  5.7350e-05  1048.8 < 2.2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen
+Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten
+der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu
+erwarten, da durch die vorliegende Heteroskedastizität die
+Standartfehler in der ursprünglichen Regression verzerrt waren.
+ALlerdings ist die Abweichung marginal, was sich auch in einem quasi
+unverändert bei fast Null liegendem p-Wert zeigt.
+
+## Miete in “Brennpunkten” und Clustern
+
+Hat sich die Miete in Brennpunkten über die Jahre stärker erhöht?
+
+Hierzu müssen wir neben `data_rent` auch `data_social` verwenden. Wir
+definieren einen “Brennpunkt” als eine Gegend, in der die
+Arbeitslosenquote 2015 über 10% liegt und wo die Kaufkraft im unteren
+20% Quantil liegt.
+
+Als Regressionsmodell verwenden wir **TODO…** mit einem Interaktionsterm
+zwischen dem Jahr und der binären Ist-Brennpunkt Variable.
+
+**TODO:** Erklären, wieso wir $jahr = jahr - 2007$ rechnen (um den
+Effekt von ist_brennpunkt und dem Intercept interpretieren zu können…)
+
+``` r
+lm_miete_brennpunkt <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
+
+summary(lm_miete_brennpunkt)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, 
+    ##     data = .)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.23880 -0.18592 -0.01919  0.17371  1.39658 
+    ## 
+    ## Coefficients:
+    ##                           Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)              1.732e+00  3.950e-04  4383.8   <2e-16 ***
+    ## jahr                     5.755e-02  6.152e-05   935.6   <2e-16 ***
+    ## ist_brennpunktTRUE      -1.006e-01  7.136e-04  -140.9   <2e-16 ***
+    ## jahr:ist_brennpunktTRUE  8.079e-03  1.141e-04    70.8   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.2772 on 1880133 degrees of freedom
+    ## Multiple R-squared:  0.4221, Adjusted R-squared:  0.4221 
+    ## F-statistic: 4.578e+05 on 3 and 1880133 DF,  p-value: < 2.2e-16
+
+**TODO** Interpretieren
+
+# Ideen, Testen & Ausprobieren
+
+``` r
+1+1
+```
+
+    ## [1] 2
