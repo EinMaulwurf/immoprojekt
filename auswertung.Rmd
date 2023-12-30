@@ -28,6 +28,7 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 ```
 
 # Plotting
+## Rent Daten
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
 ```{r, fig.width=7.5, fig.height=4.5}
 plot1 <- data_rent %>%
@@ -72,7 +73,12 @@ plot3 <- data_rent %>%
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
           nrow = 1)
+
+ggsave("./plots/plot_miete.pdf")
 ```
+
+## Social Daten
+Wie sehen ausgewählte Social-Variablen auf einer Karte aus?
 
 # Clustering
 k-means clustering mit den Variablen
