@@ -10,6 +10,12 @@ knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
 
 # Libraries
 ```{r message=FALSE}
+# Für Korrelationsmatrizen
+library(Hmisc)
+
+# Für Übersichts-Plots
+library(GGally)
+
 # Für schönere Latex-Tabellen
 library(stargazer)
 library(kableExtra)
@@ -34,7 +40,7 @@ library(sf)
 
 # Importing data
 Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
-```{r}
+```{r, message=FALSE}
 data_rent <- vroom("./daten/data_rent.csv")
 data_social <- vroom("./daten/data_social.csv")
 
@@ -47,40 +53,82 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 
 **TODO**
 
+Überblick über die beiden Datensätze mit Anzahl an Beobachtungen, Mittelwert, Median, Quartilen und mehr.
 ```{r}
-# Summary statistics table of IPO data
+data_social %>% select(-jahr, -r1_id) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value))
 
-data_ipo_raw
-
-vtable::sumtable(data_ipo_raw %>% filter(!is.na(return)), add.median = TRUE, out = "latex")
-
-mcor <- data_ipo_raw %>% 
-  ungroup() %>%
-  filter(!is.na(return)) %>%
-  select_if(is.numeric) %>%
-  as.matrix() %>%
-  rcorr() %>%
-  .$r
-
-mcor[upper.tri(mcor)] <- NA
-
-mcor %>%
-  #round(2) %>%
-  data.frame() %>%
-  kbl(
-    format = "latex",
-    digits = 2,
-    booktabs = T,
-    toprule = "\\hline \\hline",
-    midrule = "\\hline",
-    bottomrule = "\\hline \\hline",
-    linesep = "",
-  ) %>%
-  cat()
+data_rent %>% select(-jahr, -r1_id) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value))
 ```
 
+Korrelation zwischen Variablen
 ```{r}
-vtable::sumtable(data_rent, add.median = TRUE)
+mcor_social <- data_social %>%
+  select_if(is.numeric) %>%
+  select(-jahr) %>%
+  as.matrix() %>%
+  Hmisc::rcorr() %>%
+  .$r
+mcor_social[upper.tri(mcor_social)] <- NA
+
+mcor_social %>%
+  data.frame() %>%
+  round(2)
+# Hinzufügen, um Latex Tabelle zu erhalten
+#  %>%
+#  kbl(
+#    format = "latex",
+#    digits = 2,
+#    booktabs = T,
+#    toprule = "\\hline \\hline",
+#    midrule = "\\hline",
+#    bottomrule = "\\hline \\hline",
+#    linesep = "",
+#  ) %>%
+#  cat()
+
+mcor_social %>%
+  data.frame() %>%
+  round(2) %>%
+  rownames_to_column() %>%
+  pivot_longer(cols = -rowname) %>%
+  filter(!is.na(value), value != 1) %>%
+  arrange(desc(value)) %>%
+  rename(variable1 = rowname, variable2 = name, korrelation = value)
+```
+
+Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
+
+```{r message=FALSE, warning=FALSE, fig.width = 10, fig.height = 6}
+data_social %>%
+  slice_sample(n = 10000) %>%
+  select(anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_mfh, anteil_auslaender) %>%
+  ggpairs(
+    upper = list(continuous = "density"),
+    lower = list(continuous = wrap("points", alpha = 0.1, size=0.1),
+                 combo = wrap("dot", alpha = 0.1, size=0.2)))+
+  theme_bw()
 ```
 
 
