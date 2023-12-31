@@ -27,6 +27,10 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
   st_transform("EPSG:3035")
 ```
 
+# Summary Statistics
+
+**TODO**
+
 # Plotting
 ## Rent Daten
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
