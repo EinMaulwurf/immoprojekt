@@ -55,7 +55,10 @@ r1_ids <- inspire_grid_berlin %>%
 # Filtering data_rent
 data_rent <- data_rent_complete %>%
   select(r1_id, mietekalt, wohnflaeche, jahr) %>%
-  filter(r1_id %in% r1_ids)
+  filter(r1_id %in% r1_ids) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(mietekalt > 0,
+         wohnflaeche > 0)
 
 # Removing original data
 rm(data_rent_complete)
