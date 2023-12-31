@@ -9,10 +9,26 @@ knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
 ```
 
 # Libraries
-```{r}
+```{r message=FALSE}
+# Für schönere Latex-Tabellen
+library(stargazer)
+library(kableExtra)
+library(vtable)
+
+# Für heteroscedasticity-consistent tests
+library(sandwich)
+library(lmtest)
+
+# Für schönere Plots
 library(ggpubr)
+
+# Für schnelleres Einlesen von Daten
 library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
 library(tidyverse)
+
+# Fürs Arbeiten mit Geodaten
 library(sf)
 ```
 
@@ -30,6 +46,43 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 # Summary Statistics
 
 **TODO**
+
+```{r}
+# Summary statistics table of IPO data
+
+data_ipo_raw
+
+vtable::sumtable(data_ipo_raw %>% filter(!is.na(return)), add.median = TRUE, out = "latex")
+
+mcor <- data_ipo_raw %>% 
+  ungroup() %>%
+  filter(!is.na(return)) %>%
+  select_if(is.numeric) %>%
+  as.matrix() %>%
+  rcorr() %>%
+  .$r
+
+mcor[upper.tri(mcor)] <- NA
+
+mcor %>%
+  #round(2) %>%
+  data.frame() %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>%
+  cat()
+```
+
+```{r}
+vtable::sumtable(data_rent, add.median = TRUE)
+```
+
 
 # Plotting
 ## Rent Daten
@@ -340,8 +393,6 @@ Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen von nich
 Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standartfehler und Vergleichen die Ergebnisse mit der ursprünglichen Regression. Dafür wird eine "heteroskedasticity-consistent" (HC) Kovarianzmatrix geschätzt.
 
 ```{r}
-library(sandwich)
-library(lmtest)
 coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
 ```
 
