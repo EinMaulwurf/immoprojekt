@@ -475,6 +475,25 @@ summary(lm_miete_brennpunkt)
 
 **TODO** Interpretieren
 
+Jetzt Regression mit den verschiedenen Clustern
+```{r}
+r1_id_cluster <- data_social %>%
+  filter(jahr == 2010) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  select(r1_id) %>%
+  cbind(cluster = kmeans_result_2010$cluster) %>%
+  mutate(cluster = as_factor(cluster))
+
+data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  filter(!is.na(cluster)) %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .) %>%
+  summary()
+```
+
+
 # Ideen, Testen & Ausprobieren
 
 ```{r}
