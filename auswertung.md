@@ -5,53 +5,33 @@ auswertung.Rmd
 # Libraries
 
 ``` r
+# Für Korrelationsmatrizen
+library(Hmisc)
+
+# Für Übersichts-Plots
+library(GGally)
+
+# Für schönere Latex-Tabellen
+library(stargazer)
+library(kableExtra)
+library(vtable)
+
+# Für heteroscedasticity-consistent tests
+library(sandwich)
+library(lmtest)
+
+# Für schönere Plots
 library(ggpubr)
-```
 
-    ## Loading required package: ggplot2
-
-``` r
+# Für schnelleres Einlesen von Daten
 library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
 library(tidyverse)
-```
 
-    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-    ## ✔ dplyr     1.1.4     ✔ readr     2.1.4
-    ## ✔ forcats   1.0.0     ✔ stringr   1.5.1
-    ## ✔ lubridate 1.9.3     ✔ tibble    3.2.1
-    ## ✔ purrr     1.0.2     ✔ tidyr     1.3.0
-
-    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ readr::col_character()   masks vroom::col_character()
-    ## ✖ readr::col_date()        masks vroom::col_date()
-    ## ✖ readr::col_datetime()    masks vroom::col_datetime()
-    ## ✖ readr::col_double()      masks vroom::col_double()
-    ## ✖ readr::col_factor()      masks vroom::col_factor()
-    ## ✖ readr::col_guess()       masks vroom::col_guess()
-    ## ✖ readr::col_integer()     masks vroom::col_integer()
-    ## ✖ readr::col_logical()     masks vroom::col_logical()
-    ## ✖ readr::col_number()      masks vroom::col_number()
-    ## ✖ readr::col_skip()        masks vroom::col_skip()
-    ## ✖ readr::col_time()        masks vroom::col_time()
-    ## ✖ readr::cols()            masks vroom::cols()
-    ## ✖ readr::date_names_lang() masks vroom::date_names_lang()
-    ## ✖ readr::default_locale()  masks vroom::default_locale()
-    ## ✖ dplyr::filter()          masks stats::filter()
-    ## ✖ readr::fwf_cols()        masks vroom::fwf_cols()
-    ## ✖ readr::fwf_empty()       masks vroom::fwf_empty()
-    ## ✖ readr::fwf_positions()   masks vroom::fwf_positions()
-    ## ✖ readr::fwf_widths()      masks vroom::fwf_widths()
-    ## ✖ dplyr::lag()             masks stats::lag()
-    ## ✖ readr::locale()          masks vroom::locale()
-    ## ✖ readr::output_column()   masks vroom::output_column()
-    ## ✖ readr::problems()        masks vroom::problems()
-    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
-
-``` r
+# Fürs Arbeiten mit Geodaten
 library(sf)
 ```
-
-    ## Linking to GEOS 3.10.2, GDAL 3.4.1, PROJ 8.2.1; sf_use_s2() is TRUE
 
 # Importing data
 
@@ -60,31 +40,8 @@ abgespeichert.
 
 ``` r
 data_rent <- vroom("./daten/data_rent.csv")
-```
-
-    ## Rows: 1919320 Columns: 4
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ","
-    ## chr (1): r1_id
-    ## dbl (3): mietekalt, wohnflaeche, jahr
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-``` r
 data_social <- vroom("./daten/data_social.csv")
-```
 
-    ## Rows: 11240 Columns: 12
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ","
-    ## chr  (1): r1_id
-    ## dbl (11): jahr, anzahl_haushalte, arbeitslosenquote, anteil_oberklassewagen,...
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-``` r
 inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg")
 ```
 
@@ -110,6 +67,182 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
     ## Dimension:     XY
     ## Bounding box:  xmin: 13.08835 ymin: 52.33825 xmax: 13.76116 ymax: 52.67551
     ## Geodetic CRS:  WGS 84
+
+# Summary Statistics
+
+**TODO**
+
+Überblick über die beiden Datensätze mit Anzahl an Beobachtungen,
+Mittelwert, Median, Quartilen und mehr.
+
+``` r
+data_social %>% select(-jahr, -r1_id) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value))
+```
+
+    ## # A tibble: 10 × 9
+    ##    name                n    mean Std.Dev.     min Pctl.25 Pctl.50 Pctl.75    max
+    ##    <chr>           <int>   <dbl>    <dbl>   <dbl>   <dbl>   <dbl>   <dbl>  <dbl>
+    ##  1 anteil_60_plus  11205 2.80e+1    6.81  7.77e+0 2.37e+1 2.85e+1 3.28e+1 1   e2
+    ##  2 anteil_auslaen… 11205 1.01e+1   10.2   0       3.31e+0 6.10e+0 1.34e+1 7.48e1
+    ##  3 anteil_efh      11205 3.68e+1   31.5   0       6.23e+0 3.08e+1 6.32e+1 1.00e2
+    ##  4 anteil_mfh      11205 2.68e+1   17.9   0       1.22e+1 2.53e+1 3.9 e+1 1   e2
+    ##  5 anteil_oberkla…  9319 5.25e+0    2.49  0       3.56e+0 4.8 e+0 6.38e+0 2.63e1
+    ##  6 anteil_wohnblo… 11205 3.27e+1   30.8   0       2.98e+0 2.49e+1 5.79e+1 1   e2
+    ##  7 anzahl_haushal… 10487 2.24e+3 2574.    0       4.08e+2 1.30e+3 3.16e+3 1.47e4
+    ##  8 arbeitslosenqu… 11205 8.54e+0    5.14  0       4.49e+0 8.15e+0 1.19e+1 2.66e1
+    ##  9 kaufkraft_pro_… 10452 4.01e+4 8689.    1.87e+4 3.36e+4 3.89e+4 4.57e+4 7.99e4
+    ## 10 kreditrisiko    11205 5.99e-1    0.204 1.11e-1 4.31e-1 5.93e-1 7.76e-1 1   e0
+
+``` r
+data_rent %>% select(-jahr, -r1_id) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value))
+```
+
+    ## # A tibble: 3 × 9
+    ##   name               n   mean Std.Dev.       min Pctl.25 Pctl.50 Pctl.75    max
+    ##   <chr>          <int>  <dbl>    <dbl>     <dbl>   <dbl>   <dbl>   <dbl>  <dbl>
+    ## 1 mietekalt    1917043 627.      517.  0.01       346      468.   707.   15000 
+    ## 2 mietekalt_m2 1917043   8.50    115.  0.0000820    5.59     7      9.45 58000.
+    ## 3 wohnflaeche  1917043  75.8      35.6 0.0100      55.0     68.9   88     1000
+
+Korrelation zwischen Variablen
+
+``` r
+mcor_social <- data_social %>%
+  select_if(is.numeric) %>%
+  select(-jahr) %>%
+  as.matrix() %>%
+  Hmisc::rcorr() %>%
+  .$r
+mcor_social[upper.tri(mcor_social)] <- NA
+
+mcor_social %>%
+  data.frame() %>%
+  round(2)
+```
+
+    ##                        anzahl_haushalte arbeitslosenquote
+    ## anzahl_haushalte                   1.00                NA
+    ## arbeitslosenquote                  0.40              1.00
+    ## anteil_oberklassewagen            -0.02             -0.16
+    ## kaufkraft_pro_haushalt            -0.33             -0.71
+    ## anteil_efh                        -0.63             -0.50
+    ## anteil_mfh                        -0.20             -0.08
+    ## anteil_wohnblock                   0.74              0.56
+    ## anteil_auslaender                  0.40              0.12
+    ## kreditrisiko                       0.56              0.59
+    ## anteil_60_plus                    -0.44             -0.48
+    ##                        anteil_oberklassewagen kaufkraft_pro_haushalt anteil_efh
+    ## anzahl_haushalte                           NA                     NA         NA
+    ## arbeitslosenquote                          NA                     NA         NA
+    ## anteil_oberklassewagen                   1.00                     NA         NA
+    ## kaufkraft_pro_haushalt                   0.19                   1.00         NA
+    ## anteil_efh                              -0.01                   0.42       1.00
+    ## anteil_mfh                               0.03                   0.07      -0.31
+    ## anteil_wohnblock                        -0.04                  -0.44      -0.81
+    ## anteil_auslaender                        0.06                  -0.10      -0.37
+    ## kreditrisiko                            -0.15                  -0.52      -0.68
+    ## anteil_60_plus                           0.18                   0.39       0.30
+    ##                        anteil_mfh anteil_wohnblock anteil_auslaender
+    ## anzahl_haushalte               NA               NA                NA
+    ## arbeitslosenquote              NA               NA                NA
+    ## anteil_oberklassewagen         NA               NA                NA
+    ## kaufkraft_pro_haushalt         NA               NA                NA
+    ## anteil_efh                     NA               NA                NA
+    ## anteil_mfh                   1.00               NA                NA
+    ## anteil_wohnblock            -0.22             1.00                NA
+    ## anteil_auslaender           -0.10             0.43              1.00
+    ## kreditrisiko                -0.04             0.70              0.45
+    ## anteil_60_plus               0.28            -0.46             -0.23
+    ##                        kreditrisiko anteil_60_plus
+    ## anzahl_haushalte                 NA             NA
+    ## arbeitslosenquote                NA             NA
+    ## anteil_oberklassewagen           NA             NA
+    ## kaufkraft_pro_haushalt           NA             NA
+    ## anteil_efh                       NA             NA
+    ## anteil_mfh                       NA             NA
+    ## anteil_wohnblock                 NA             NA
+    ## anteil_auslaender                NA             NA
+    ## kreditrisiko                   1.00             NA
+    ## anteil_60_plus                -0.46              1
+
+``` r
+# Hinzufügen, um Latex Tabelle zu erhalten
+#  %>%
+#  kbl(
+#    format = "latex",
+#    digits = 2,
+#    booktabs = T,
+#    toprule = "\\hline \\hline",
+#    midrule = "\\hline",
+#    bottomrule = "\\hline \\hline",
+#    linesep = "",
+#  ) %>%
+#  cat()
+
+mcor_social %>%
+  data.frame() %>%
+  round(2) %>%
+  rownames_to_column() %>%
+  pivot_longer(cols = -rowname) %>%
+  filter(!is.na(value), value != 1) %>%
+  arrange(desc(value)) %>%
+  rename(variable1 = rowname, variable2 = name, korrelation = value)
+```
+
+    ## # A tibble: 45 × 3
+    ##    variable1         variable2              korrelation
+    ##    <chr>             <chr>                        <dbl>
+    ##  1 anteil_wohnblock  anzahl_haushalte              0.74
+    ##  2 kreditrisiko      anteil_wohnblock              0.7 
+    ##  3 kreditrisiko      arbeitslosenquote             0.59
+    ##  4 anteil_wohnblock  arbeitslosenquote             0.56
+    ##  5 kreditrisiko      anzahl_haushalte              0.56
+    ##  6 kreditrisiko      anteil_auslaender             0.45
+    ##  7 anteil_auslaender anteil_wohnblock              0.43
+    ##  8 anteil_efh        kaufkraft_pro_haushalt        0.42
+    ##  9 arbeitslosenquote anzahl_haushalte              0.4 
+    ## 10 anteil_auslaender anzahl_haushalte              0.4 
+    ## # ℹ 35 more rows
+
+Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der
+Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als
+nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der
+Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
+
+``` r
+data_social %>%
+  slice_sample(n = 10000) %>%
+  select(anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_mfh, anteil_auslaender) %>%
+  ggpairs(
+    upper = list(continuous = "density"),
+    lower = list(continuous = wrap("points", alpha = 0.1, size=0.1),
+                 combo = wrap("dot", alpha = 0.1, size=0.2)))+
+  theme_bw()
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 # Plotting
 
@@ -162,7 +295,7 @@ ggarrange(plot1,
           nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_miete.pdf")
@@ -233,7 +366,7 @@ plot4 <- data_social_sf %>%
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_data_social_2015.pdf")
@@ -278,7 +411,7 @@ data_social %>%
   theme_bw()
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in
 Berlin 2016 ![Wahlergebnissen Berlin
@@ -412,7 +545,7 @@ plot4 <- data_social_sf %>%
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
@@ -456,18 +589,18 @@ summary(lm_miete_jahr)
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
-    ## -1.23383 -0.18964 -0.02218  0.17442  1.42756 
+    ## -1.23238 -0.18946 -0.02226  0.17420  1.42667 
     ## 
     ## Coefficients:
     ##               Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept) -1.190e+02  1.048e-01   -1135   <2e-16 ***
-    ## jahr         6.015e-02  5.210e-05    1154   <2e-16 ***
+    ## (Intercept) -1.187e+02  1.047e-01   -1133   <2e-16 ***
+    ## jahr         5.998e-02  5.206e-05    1152   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.2789 on 1880313 degrees of freedom
-    ## Multiple R-squared:  0.4148, Adjusted R-squared:  0.4148 
-    ## F-statistic: 1.333e+06 on 1 and 1880313 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 0.2785 on 1878607 degrees of freedom
+    ## Multiple R-squared:  0.4141, Adjusted R-squared:  0.4141 
+    ## F-statistic: 1.328e+06 on 1 and 1878607 DF,  p-value: < 2.2e-16
 
 Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot
 oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret
@@ -500,7 +633,7 @@ lm_miete_jahr$residuals %>%
   labs(x = "Residuen", y = "Dichte")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
 
@@ -532,7 +665,7 @@ data_rent %>%
     ## 12  2018     0.09
     ## 13  2019     0.11
     ## 14  2020     0.15
-    ## 15  2021     0.16
+    ## 15  2021     0.15
 
 Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen
 von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass
@@ -548,20 +681,6 @@ Regression. Dafür wird eine “heteroskedasticity-consistent” (HC)
 Kovarianzmatrix geschätzt.
 
 ``` r
-library(sandwich)
-library(lmtest)
-```
-
-    ## Loading required package: zoo
-
-    ## 
-    ## Attaching package: 'zoo'
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     as.Date, as.Date.numeric
-
-``` r
 coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
 ```
 
@@ -569,8 +688,8 @@ coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
     ## t test of coefficients:
     ## 
     ##                Estimate  Std. Error t value  Pr(>|t|)    
-    ## (Intercept) -1.1902e+02  1.1534e-01 -1031.9 < 2.2e-16 ***
-    ## jahr         6.0150e-02  5.7350e-05  1048.8 < 2.2e-16 ***
+    ## (Intercept) -1.1868e+02  1.1512e-01 -1030.9 < 2.2e-16 ***
+    ## jahr         5.9983e-02  5.7243e-05  1047.9 < 2.2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -621,20 +740,20 @@ summary(lm_miete_brennpunkt)
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
-    ## -1.23880 -0.18592 -0.01919  0.17371  1.39658 
+    ## -1.23787 -0.18572 -0.01918  0.17350  1.39547 
     ## 
     ## Coefficients:
     ##                           Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)              1.732e+00  3.950e-04  4383.8   <2e-16 ***
-    ## jahr                     5.755e-02  6.152e-05   935.6   <2e-16 ***
-    ## ist_brennpunktTRUE      -1.006e-01  7.136e-04  -140.9   <2e-16 ***
-    ## jahr:ist_brennpunktTRUE  8.079e-03  1.141e-04    70.8   <2e-16 ***
+    ## (Intercept)              1.733e+00  3.946e-04 4391.23   <2e-16 ***
+    ## jahr                     5.736e-02  6.147e-05  933.13   <2e-16 ***
+    ## ist_brennpunktTRUE      -1.012e-01  7.126e-04 -142.03   <2e-16 ***
+    ## jahr:ist_brennpunktTRUE  8.178e-03  1.140e-04   71.75   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.2772 on 1880133 degrees of freedom
-    ## Multiple R-squared:  0.4221, Adjusted R-squared:  0.4221 
-    ## F-statistic: 4.578e+05 on 3 and 1880133 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 0.2767 on 1878426 degrees of freedom
+    ## Multiple R-squared:  0.4215, Adjusted R-squared:  0.4215 
+    ## F-statistic: 4.562e+05 on 3 and 1878426 DF,  p-value: < 2.2e-16
 
 **TODO** Interpretieren
 
