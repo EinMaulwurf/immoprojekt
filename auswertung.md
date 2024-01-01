@@ -9,7 +9,7 @@ auswertung.Rmd
 library(Hmisc)
 
 # Für Übersichts-Plots
-library(GGally)
+#library(GGally)
 
 # Für schönere Latex-Tabellen
 library(stargazer)
@@ -231,19 +231,6 @@ Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als
 nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der
 Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
 
-``` r
-data_social %>%
-  slice_sample(n = 10000) %>%
-  select(anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_mfh, anteil_auslaender) %>%
-  ggpairs(
-    upper = list(continuous = "density"),
-    lower = list(continuous = wrap("points", alpha = 0.1, size=0.1),
-                 combo = wrap("dot", alpha = 0.1, size=0.2)))+
-  theme_bw()
-```
-
-![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
-
 # Plotting
 
 ## Rent Daten
@@ -295,13 +282,268 @@ ggarrange(plot1,
           nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_miete.pdf")
 ```
 
     ## Saving 7.5 x 4.5 in image
+
+Mittlere Kaltmiete auf Karte
+
+``` r
+data_rent_sf <- data_rent %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+data_rent_sf_plot <- data_rent_sf %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(mietekalt = mean(mietekalt),
+            wohnflaeche = mean(wohnflaeche),
+            mietekalt_m2 = mean(mietekalt_m2))
+
+plot1 <- data_rent_sf_plot %>%
+  filter(mietekalt > quantile(mietekalt, probs = 0.01), mietekalt < quantile(mietekalt, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = mietekalt))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(400, 600, 900, 1300))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5))+
+  labs(fill = element_blank(),
+       subtitle = "Kaltmiete (€)")
+
+plot2 <- data_rent_sf_plot %>%
+  filter(wohnflaeche > quantile(wohnflaeche, probs = 0.01), wohnflaeche < quantile(wohnflaeche, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = wohnflaeche))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(50, 70, 100, 130))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5))+
+  labs(fill = element_blank(),
+       subtitle = "Wohnfläche (m²)")
+
+plot3 <- data_rent_sf_plot %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = 0.01), mietekalt_m2 < quantile(mietekalt_m2, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = mietekalt_m2))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(6, 8, 10, 12, 14))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5))+
+  labs(fill = element_blank(),
+       subtitle = "Kaltmiete (€/m²)")
+
+rm(data_rent_sf_plot)
+
+ggarrange(plot1, plot2, plot3, nrow = 1)
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_miete_karte_2015.pdf")
+```
+
+    ## Saving 7.5 x 2.5 in image
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <e2>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <82>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€)' in 'mbcsToSbcs': dot substituted for <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call(C_textBounds, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <e2>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <82>
+
+    ## Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+    ## conversion failure on 'Kaltmiete (€/m²)' in 'mbcsToSbcs': dot substituted for
+    ## <ac>
 
 ## Social Daten
 
@@ -379,8 +621,6 @@ ggsave("./plots/plot_data_social_2015.pdf")
 k-means clustering mit den Variablen
 
 - arbeitslosenquote
-- anteil_oberklassewagen (NICHT MEHR, weil nicht für alle Jahre
-  vorhanden)
 - kaufkraft_pro_haushalt
 - anteil_auslaender
 - anteil_efh
@@ -756,6 +996,52 @@ summary(lm_miete_brennpunkt)
     ## F-statistic: 4.562e+05 on 3 and 1878426 DF,  p-value: < 2.2e-16
 
 **TODO** Interpretieren
+
+Jetzt Regression mit den verschiedenen Clustern
+
+``` r
+r1_id_cluster <- data_social %>%
+  filter(jahr == 2010) %>%
+  select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
+  drop_na() %>%
+  select(r1_id) %>%
+  cbind(cluster = kmeans_result_2010$cluster) %>%
+  mutate(cluster = as_factor(cluster))
+
+data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  filter(!is.na(cluster)) %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .) %>%
+  summary()
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, 
+    ##     data = .)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -10.8420  -0.1805  -0.0166   0.1577   9.1303 
+    ## 
+    ## Coefficients:
+    ##                 Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)   -1.344e+02  2.333e-01 -576.41   <2e-16 ***
+    ## jahr           6.777e-02  1.159e-04  584.87   <2e-16 ***
+    ## cluster2      -2.574e+01  3.610e-01  -71.31   <2e-16 ***
+    ## cluster3       3.774e+01  6.419e-01   58.79   <2e-16 ***
+    ## cluster4       2.424e+01  1.023e+00   23.71   <2e-16 ***
+    ## jahr:cluster2  1.288e-02  1.793e-04   71.83   <2e-16 ***
+    ## jahr:cluster3 -1.867e-02  3.189e-04  -58.55   <2e-16 ***
+    ## jahr:cluster4 -1.204e-02  5.080e-04  -23.70   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.2966 on 1374378 degrees of freedom
+    ##   (542657 observations deleted due to missingness)
+    ## Multiple R-squared:  0.3809, Adjusted R-squared:  0.3809 
+    ## F-statistic: 1.208e+05 on 7 and 1374378 DF,  p-value: < 2.2e-16
 
 # Ideen, Testen & Ausprobieren
 
