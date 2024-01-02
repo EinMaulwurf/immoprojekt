@@ -27,6 +27,7 @@ library(lmtest)
 
 # Für schönere Plots
 library(ggpubr)
+library(ggrepel)
 
 # Für schnelleres Einlesen von Daten
 library(vroom)
@@ -38,7 +39,7 @@ library(tidyverse)
 library(sf)
 ```
 
-# Importing data
+# Importieren der Daten
 Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
 ```{r, message=FALSE}
 data_rent <- vroom("./daten/data_rent.csv")
@@ -121,6 +122,32 @@ mcor_social %>%
 Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
 
 # Plotting
+## Berlin Karte
+Der INSPIRE Grid mit den Berliner Bezirken
+```{r}
+ggplot()+
+  geom_sf(data = inspire_grid_berlin)+
+  geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
+  ggrepel::geom_label_repel(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), 
+                           aes(label = Gemeinde_n, geometry = geometry),
+                           stat = "sf_coordinates",
+                           min.segment.length = 0.2, 
+                           force_pull = 50,
+                           box.padding = 0.1,
+                           label.padding = .1,
+                           size = 2,
+                           label.r = 0,
+                           lineheight = 1,
+                           fill = "white")+
+  coord_sf(crs = 3035)+
+  #geom_sf_text(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), aes(label = Gemeinde_n), size = 3)+
+  theme_bw()
+
+ggsave("./plots/plot_berlin_karte.pdf")
+```
+
+Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von 1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir betrachten also auch teilweise Flächen, die eigentlich nicht mehr zu Berlin gehören, da wir alle Quadrate einbeziehen, die (auch nur teilweise) mit den Stadtgrenzen überlappen. Die andere Möglichkeit wäre gewesen, die Fläche zu unterschätzen und nur Quadrate zu betrachten, die komplett innerhalb der Stadtgrenzen liegen.
+
 ## Rent Daten
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
 ```{r, fig.width=7.5, fig.height=4.5}
@@ -167,7 +194,7 @@ ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
           nrow = 1)
 
-#ggsave("./plots/plot_miete.pdf")
+ggsave("./plots/plot_miete.pdf")
 ```
 
 Mittlere Kaltmiete auf Karte
@@ -229,7 +256,7 @@ ggarrange(plot1, plot2, plot3, nrow = 1)
 
 #rm(data_rent_sf_plot)
 
-#ggsave("./plots/plot_miete_karte_2015.pdf")
+ggsave("./plots/plot_miete_karte_2015.pdf")
 ```
 
 
@@ -301,7 +328,7 @@ plot4 <- data_social_sf %>%
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
-#ggsave("./plots/plot_data_social_2015.pdf")
+ggsave("./plots/plot_data_social_2015.pdf")
 ```
 
 
@@ -450,8 +477,10 @@ plot4 <- data_social_sf %>%
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
-#ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
+ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
 ```
+
+**TODO:** Clusterfarben konsistent machen
 
 **Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen. Wichtig ist, dass die Farbe der Cluster zwischen den Jahren nicht konstant ist. Es sollte also die Form der Cluster über die Jahre betrachtet werden. Statt 2020 wurde 2019 verwendet, da dies das letzte Jahr aus dem Datensatz ist.
 
