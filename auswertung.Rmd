@@ -147,7 +147,7 @@ plot2 <- data_rent %>%
   scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete", y = "Dichte in %")
+  labs(x = "Kaltmiete 2010", y = "Dichte in %")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
@@ -161,7 +161,7 @@ plot3 <- data_rent %>%
   scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete", y = "Dichte in %")
+  labs(x = "Kaltmiete 2020", y = "Dichte in %")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
@@ -192,7 +192,8 @@ plot1 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Kaltmiete (€)")
 
@@ -205,7 +206,8 @@ plot2 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Wohnfläche (m²)")
 
@@ -218,13 +220,14 @@ plot3 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Kaltmiete (€/m²)")
 
-rm(data_rent_sf_plot)
-
 ggarrange(plot1, plot2, plot3, nrow = 1)
+
+#rm(data_rent_sf_plot)
 
 #ggsave("./plots/plot_miete_karte_2015.pdf")
 ```
@@ -244,24 +247,28 @@ plot1 <- data_social_sf %>%
   ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Arbeitslosenquote")+
+  labs(subtitle = "Arbeitslosenquote",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot2 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
   geom_sf()+
-  scale_fill_viridis_c()+
-  labs(subtitle = "Kaufkraft")+
+  scale_fill_viridis_c(trans = "log10", breaks = c(30000, 50000, 70000))+
+  labs(subtitle = "Kaufkraft",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -269,24 +276,28 @@ plot3 <- data_social_sf %>%
   ggplot(aes(fill = anteil_60_plus, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Anteil 60+")+
+  labs(subtitle = "Anteil 60+",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot4 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   ggplot(aes(fill = anteil_auslaender, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Ausländeranteil")+
+  labs(subtitle = "Ausländeranteil",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
@@ -389,7 +400,8 @@ plot1 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot2 <- data_social_sf %>%
   filter(jahr == 2010) %>%
@@ -403,7 +415,8 @@ plot2 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -417,7 +430,8 @@ plot3 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot4 <- data_social_sf %>%
   filter(jahr == 2019) %>%
@@ -431,7 +445,8 @@ plot4 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
