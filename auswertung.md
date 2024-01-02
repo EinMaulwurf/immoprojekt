@@ -22,6 +22,7 @@ library(lmtest)
 
 # Für schönere Plots
 library(ggpubr)
+library(ggrepel)
 
 # Für schnelleres Einlesen von Daten
 library(vroom)
@@ -33,7 +34,7 @@ library(tidyverse)
 library(sf)
 ```
 
-# Importing data
+# Importieren der Daten
 
 Die Daten wurden im Dokument ‘cleaning.Rmd’ aufbereitet und
 abgespeichert.
@@ -233,6 +234,46 @@ Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
 
 # Plotting
 
+## Berlin Karte
+
+Der INSPIRE Grid mit den Berliner Bezirken
+
+``` r
+ggplot()+
+  geom_sf(data = inspire_grid_berlin)+
+  geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
+  ggrepel::geom_label_repel(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), 
+                           aes(label = Gemeinde_n, geometry = geometry),
+                           stat = "sf_coordinates",
+                           min.segment.length = 0.2, 
+                           force_pull = 50,
+                           box.padding = 0.1,
+                           label.padding = .1,
+                           size = 2,
+                           label.r = 0,
+                           lineheight = 1,
+                           fill = "white")+
+  coord_sf(crs = 3035)+
+  #geom_sf_text(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), aes(label = Gemeinde_n), size = 3)+
+  theme_bw()
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_berlin_karte.pdf")
+```
+
+    ## Saving 5 x 3 in image
+
+Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von
+1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir
+betrachten also auch teilweise Flächen, die eigentlich nicht mehr zu
+Berlin gehören, da wir alle Quadrate einbeziehen, die (auch nur
+teilweise) mit den Stadtgrenzen überlappen. Die andere Möglichkeit wäre
+gewesen, die Fläche zu unterschätzen und nur Quadrate zu betrachten, die
+komplett innerhalb der Stadtgrenzen liegen.
+
 ## Rent Daten
 
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
@@ -261,7 +302,7 @@ plot2 <- data_rent %>%
   scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete", y = "Dichte in %")
+  labs(x = "Kaltmiete 2010", y = "Dichte in %")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
@@ -275,14 +316,14 @@ plot3 <- data_rent %>%
   scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete", y = "Dichte in %")
+  labs(x = "Kaltmiete 2020", y = "Dichte in %")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
           nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_miete.pdf")
@@ -313,7 +354,8 @@ plot1 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Kaltmiete (€)")
 
@@ -326,7 +368,8 @@ plot2 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Wohnfläche (m²)")
 
@@ -339,18 +382,19 @@ plot3 <- data_rent_sf_plot %>%
   theme(legend.position = "top",
         axis.ticks = element_blank(),
         axis.text = element_blank(),
-        plot.subtitle = element_text(hjust = .5))+
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
   labs(fill = element_blank(),
        subtitle = "Kaltmiete (€/m²)")
-
-rm(data_rent_sf_plot)
 
 ggarrange(plot1, plot2, plot3, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
+#rm(data_rent_sf_plot)
+
 ggsave("./plots/plot_miete_karte_2015.pdf")
 ```
 
@@ -561,24 +605,28 @@ plot1 <- data_social_sf %>%
   ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Arbeitslosenquote")+
+  labs(subtitle = "Arbeitslosenquote",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot2 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
   geom_sf()+
-  scale_fill_viridis_c()+
-  labs(subtitle = "Kaufkraft")+
+  scale_fill_viridis_c(trans = "log10", breaks = c(30000, 50000, 70000))+
+  labs(subtitle = "Kaufkraft",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -586,29 +634,33 @@ plot3 <- data_social_sf %>%
   ggplot(aes(fill = anteil_60_plus, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Anteil 60+")+
+  labs(subtitle = "Anteil 60+",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 plot4 <- data_social_sf %>%
   filter(jahr == 2015) %>%
   ggplot(aes(fill = anteil_auslaender, geometry = geom), linewidth = .1)+
   geom_sf()+
   scale_fill_viridis_c()+
-  labs(subtitle = "Ausländeranteil")+
+  labs(subtitle = "Ausländeranteil",
+       fill = element_blank())+
   theme_bw()+
-  theme(legend.position = "none",
+  theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5))
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_data_social_2015.pdf")
@@ -651,7 +703,7 @@ data_social %>%
   theme_bw()
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in
 Berlin 2016 ![Wahlergebnissen Berlin
@@ -738,7 +790,8 @@ plot1 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot2 <- data_social_sf %>%
   filter(jahr == 2010) %>%
@@ -752,7 +805,8 @@ plot2 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot3 <- data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -766,7 +820,8 @@ plot3 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 plot4 <- data_social_sf %>%
   filter(jahr == 2019) %>%
@@ -780,18 +835,21 @@ plot4 <- data_social_sf %>%
   theme_bw()+
   theme(legend.position = "none",
         axis.text = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = .5))
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
 ```
 
     ## Saving 7.5 x 2.5 in image
+
+**TODO:** Clusterfarben konsistent machen
 
 **Ergebnis:** Die Cluster sind über die Zeit ziemlich stabil. Erst in
 2019 lassen sich einige größere Unterschiede bzw. Abweichungen erkennen.
@@ -873,7 +931,7 @@ lm_miete_jahr$residuals %>%
   labs(x = "Residuen", y = "Dichte")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
 
