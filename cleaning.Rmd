@@ -16,6 +16,7 @@ library(sf)
 ```
 
 # Importing and cleaning data
+**ATTENTION:** If this project was cloned from GitHub, the `INSPIRE_Grid` folder must be downloaded from the source below and placed into the right directory. The files were to large for GitHub.
 ```{r}
 data_rent_complete <- vroom("./daten/Datensatz_Berlin_Rent_new.csv")
 data_social_complete <- vroom("./daten/Datensatz_Berlin_Social_new.csv", locale = locale(grouping_mark = ".", decimal_mark = ",", encoding = "UTF-8"))
