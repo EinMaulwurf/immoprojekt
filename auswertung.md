@@ -30,6 +30,9 @@ library(vroom)
 # Für allgemeine Datenmanipulation und Plotten
 library(tidyverse)
 
+# Für tidy Regressionsergebnisse
+library(broom)
+
 # Fürs Arbeiten mit Geodaten
 library(sf)
 ```
@@ -743,8 +746,13 @@ Betrachten wir beispielsweise Cluster 3:
 - Der Anteil der Bevölkerung über 60 Jahre ist ebenso mit Abstand am
   größten.
 
-Zusammenfassend könnte man Cluster 3 also als Ort bezeichnen, wo
-Reichtum, Ruhe und Rentner regieren!
+Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir
+eine zusammenfassende Beschreibung für die 4 Gebiete erstellt:
+
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 3: Wohlhabende Seniorengemeinschaften
+- Cluster 4: Multikulturelle Ballungsräume
 
 ## Zeitliche Stabilität der Cluster
 
@@ -922,18 +930,42 @@ liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier
 der Einfachheit als Dichte dargestellt.
 
 ``` r
-lm_miete_jahr$residuals %>%
-  data.frame(residuals = .) %>%
-  ggplot(aes(x = residuals))+
-  geom_density(bw = .1)+
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+plot1 <- lm_miete_jahr$residuals %>%
+  data.frame(resids = .) %>%
+  ggplot(aes(x = resids))+
+  geom_density()+
+  coord_cartesian(xlim = c(-1, 1))+
   theme_bw()+
   labs(x = "Residuen", y = "Dichte")
+
+plot2 <- lm_miete_jahr$residuals %>%
+  data.frame(resids = .) %>%
+  slice_sample(prop = .1) %>%
+  ggplot(aes(sample = resids)) +
+  stat_qq(alpha = .1, size = .2) +
+  stat_qq_line() +
+  xlab("Theoretische Quantile") +
+  ylab("Stichproben-Quantile")+
+  theme_bw()
+  
+ggarrange(plot1, plot2, nrow = 1)
 ```
 
 ![](auswertung_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
-Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
+``` r
+ggsave("./plots/plot_regression_miete_jahr.pdf")
+```
+
+    ## Saving 5 x 3 in image
+
+Im Ergebnis sehen wir eine ziemlich gute Normalverteilung. Links ist die
+Dichtefunktion der Residuen zu sehen und rechts ein QQ-Plot. Würden alle
+Punkte des QQ-Plots auf der Geraden liegen, so läge eine perfekte
+Normalverteilung in der Stichprobe vor. Dies ist hier nicht der Fall, da
+an den Rändern, insbesondere am rechten Rand, die Stichproben-Quantile
+über der Geraden liegen. Dies deutet auf eine (leicht) rechtsschiefe
+Verteilung hin.
 
 ``` r
 data_rent %>%
@@ -996,8 +1028,13 @@ Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten
 der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu
 erwarten, da durch die vorliegende Heteroskedastizität die
 Standartfehler in der ursprünglichen Regression verzerrt waren.
-ALlerdings ist die Abweichung marginal, was sich auch in einem quasi
-unverändert bei fast Null liegendem p-Wert zeigt.
+Allerdings ist die Abweichung marginal, was sich auch in einem quasi
+unverändert bei fast Null liegendem p-Wert zeigt. Aufgrund dieser
+kleinen Abweichung, werden wir in den restlichen Auswertungen keine
+gesonderten Tests mehr aufgrund von Heteroskedastizität durchführen,
+wenn der p-Wert wie in diesem Fall extrehm nah an Null liegt. Denn
+selbst wenn die t-Statistiken leicht verzerrt sind, ändert das nichts an
+der Interpretation.
 
 ## Miete in “Brennpunkten” und Clustern
 
@@ -1055,23 +1092,58 @@ summary(lm_miete_brennpunkt)
 
 **TODO** Interpretieren
 
+Wir sollten noch die Güte der Regression überprüfen, indem wir die
+Residuen betrachten.
+
+``` r
+plot1 <- lm_miete_brennpunkt$residuals %>%
+  data.frame(resids = .) %>%
+  ggplot(aes(x = resids))+
+  geom_density()+
+  coord_cartesian(xlim = c(-1, 1))+
+  theme_bw()+
+  labs(x = "Residuen", y = "Dichte")
+
+plot2 <- lm_miete_brennpunkt$residuals %>%
+  data.frame(resids = .) %>%
+  slice_sample(prop = .1) %>%
+  ggplot(aes(sample = resids)) +
+  stat_qq(alpha = .1, size = .2) +
+  stat_qq_line() +
+  xlab("Theoretische Quantile") +
+  ylab("Stichproben-Quantile")+
+  theme_bw()
+  
+ggarrange(plot1, plot2, nrow = 1)
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_regression_brennpunkte.pdf")
+```
+
+    ## Saving 5 x 3 in image
+
 Jetzt Regression mit den verschiedenen Clustern
 
 ``` r
 r1_id_cluster <- data_social %>%
-  filter(jahr == 2010) %>%
+  filter(jahr == 2015) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
   drop_na() %>%
   select(r1_id) %>%
-  cbind(cluster = kmeans_result_2010$cluster) %>%
+  cbind(cluster = kmeans_result_2015$cluster) %>%
   mutate(cluster = as_factor(cluster))
 
-data_social %>%
+lm_miete_cluster <- data_social %>%
   left_join(r1_id_cluster, by = "r1_id") %>%
   filter(!is.na(cluster)) %>%
   right_join(data_rent, by = c("r1_id", "jahr")) %>%
-  lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .) %>%
-  summary()
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .)
+
+summary(lm_miete_cluster)
 ```
 
     ## 
@@ -1081,25 +1153,151 @@ data_social %>%
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
-    ## -10.8420  -0.1805  -0.0166   0.1577   9.1303 
+    ## -1.16214 -0.17837 -0.01785  0.15647  1.38704 
     ## 
     ## Coefficients:
     ##                 Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)   -1.344e+02  2.333e-01 -576.41   <2e-16 ***
-    ## jahr           6.777e-02  1.159e-04  584.87   <2e-16 ***
-    ## cluster2      -2.574e+01  3.610e-01  -71.31   <2e-16 ***
-    ## cluster3       3.774e+01  6.419e-01   58.79   <2e-16 ***
-    ## cluster4       2.424e+01  1.023e+00   23.71   <2e-16 ***
-    ## jahr:cluster2  1.288e-02  1.793e-04   71.83   <2e-16 ***
-    ## jahr:cluster3 -1.867e-02  3.189e-04  -58.55   <2e-16 ***
-    ## jahr:cluster4 -1.204e-02  5.080e-04  -23.70   <2e-16 ***
+    ## (Intercept)   -9.085e+01  5.738e-01 -158.33   <2e-16 ***
+    ## jahr           4.619e-02  2.850e-04  162.03   <2e-16 ***
+    ## cluster2      -6.254e+01  6.257e-01  -99.95   <2e-16 ***
+    ## cluster3      -2.036e+01  1.040e+00  -19.58   <2e-16 ***
+    ## cluster4      -3.203e+01  6.109e-01  -52.43   <2e-16 ***
+    ## jahr:cluster2  3.108e-02  3.108e-04   99.99   <2e-16 ***
+    ## jahr:cluster3  1.004e-02  5.167e-04   19.43   <2e-16 ***
+    ## jahr:cluster4  1.584e-02  3.035e-04   52.18   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.2966 on 1374378 degrees of freedom
-    ##   (542657 observations deleted due to missingness)
-    ## Multiple R-squared:  0.3809, Adjusted R-squared:  0.3809 
-    ## F-statistic: 1.208e+05 on 7 and 1374378 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 0.2654 on 1357285 degrees of freedom
+    ##   (521316 observations deleted due to missingness)
+    ## Multiple R-squared:  0.4035, Adjusted R-squared:  0.4035 
+    ## F-statistic: 1.311e+05 on 7 and 1357285 DF,  p-value: < 2.2e-16
+
+**ACHTUNG:** Wir müssen je das oberste und unterste 1% der Beobachtungen
+rauswerfen, da diese zu einer Verletzung der Normalverteilungsannahme
+führen. Das führt zu leicht unterschiedlichen Werten für die Betas.
+
+Zur Erinnerung, die Cluster haben wir wie folgt beschrieben:
+
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 3: Wohlhabende Seniorengemeinschaften
+- Cluster 4: Multikulturelle Ballungsräume
+
+Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem
+“kleinen” Modell, schon beachtlich.
+
+Wir sollten noch die Güte der Regression überprüfen, indem wir die
+Residuen betrachten.
+
+``` r
+plot1 <- lm_miete_cluster$residuals %>%
+  data.frame(resids = .) %>%
+  ggplot(aes(x = resids))+
+  geom_density()+
+  coord_cartesian(xlim = c(-1, 1))+
+  theme_bw()+
+  labs(x = "Residuen", y = "Dichte")
+
+plot2 <- lm_miete_cluster$residuals %>%
+  data.frame(resids = .) %>%
+  slice_sample(prop = .1) %>%
+  ggplot(aes(sample = resids)) +
+  stat_qq(alpha = .1, size = .2) +
+  stat_qq_line() +
+  xlab("Theoretische Quantile") +
+  ylab("Stichproben-Quantile")+
+  theme_bw()
+  
+ggarrange(plot1, plot2, nrow = 1)
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_regression_cluster.pdf")
+```
+
+    ## Saving 5 x 3 in image
+
+Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme
+ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser)
+vertrauen.
+
+## Mietbelastung (Miete / Einkommen)
+
+``` r
+lm_mietbelastung <- data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  filter(!is.na(cluster)) %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  lm(mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
+summary(lm_mietbelastung)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -0.2993 -0.0845 -0.0404  0.0319  4.7342 
+    ## 
+    ## Coefficients:
+    ##                 Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)   -1.751e+01  3.423e-01  -51.16   <2e-16 ***
+    ## jahr           8.806e-03  1.701e-04   51.78   <2e-16 ***
+    ## cluster2      -8.983e+00  3.733e-01  -24.06   <2e-16 ***
+    ## cluster3       1.325e+01  6.205e-01   21.35   <2e-16 ***
+    ## cluster4       4.282e+00  3.645e-01   11.75   <2e-16 ***
+    ## jahr:cluster2  4.487e-03  1.855e-04   24.20   <2e-16 ***
+    ## jahr:cluster3 -6.590e-03  3.083e-04  -21.38   <2e-16 ***
+    ## jahr:cluster4 -2.132e-03  1.811e-04  -11.78   <2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.1583 on 1357285 degrees of freedom
+    ##   (521316 observations deleted due to missingness)
+    ## Multiple R-squared:  0.06131,    Adjusted R-squared:  0.06131 
+    ## F-statistic: 1.266e+04 on 7 and 1357285 DF,  p-value: < 2.2e-16
+
+``` r
+lm_mietbelastung %>%
+  broom::augment() %>%
+  slice_sample(n = 1000, by = cluster) %>%
+  ggplot(aes(x = jahr, y = mietbelastung, color = cluster))+
+  geom_point(alpha = .05)+
+  geom_line(aes(y = .fitted))+
+  coord_cartesian(ylim = c(0, .4))+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019)) +
+  facet_wrap(~cluster)+
+  theme_bw()+
+  labs(x = "Jahr",
+       y = "Mietbelastung")+
+  theme(legend.position = "none")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_regression_mietbelastung.pdf")
+```
+
+    ## Saving 5 x 3 in image
+
+**TODO:** Rausfinden, warum die Jahre 2006 bis 2008 in data social
+fehlen
+
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 3: Wohlhabende Seniorengemeinschaften
+- Cluster 4: Multikulturelle Ballungsräume
+
+**TODO:** Interpretieren **TODO:** Rausfinden, warum das R^2 hier so
+viel kleiner ist als bei den Regressionen oben (mit
+`log(mietekalt_m2) ~ jahr + cluster + cluster:jahr`)
 
 # Ideen, Testen & Ausprobieren
 
