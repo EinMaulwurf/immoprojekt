@@ -533,7 +533,7 @@ ggsave("./plots/plot_regression_miete_jahr.pdf")
 ```
 
 
-Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
+Im Ergebnis sehen wir eine ziemlich gute Normalverteilung. Links ist die Dichtefunktion der Residuen zu sehen und rechts ein QQ-Plot. Würden alle Punkte des QQ-Plots auf der Geraden liegen, so läge eine perfekte Normalverteilung in der Stichprobe vor. Dies ist hier nicht der Fall, da an den Rändern, insbesondere am rechten Rand, die Stichproben-Quantile über der Geraden liegen. Dies deutet auf eine (leicht) rechtsschiefe Verteilung hin.
 
 ```{r}
 data_rent %>%
@@ -554,7 +554,7 @@ Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standartfehler 
 coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
 ```
 
-Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt.
+Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt. Aufgrund dieser kleinen Abweichung, werden wir in den restlichen Auswertungen keine gesonderten Tests mehr aufgrund von Heteroskedastizität durchführen, wenn der p-Wert wie in diesem Fall extrehm nah an Null liegt. Denn selbst wenn die t-Statistiken leicht verzerrt sind, ändert das nichts an der Interpretation.
 
 ## Miete in "Brennpunkten" und Clustern
 
