@@ -103,4 +103,11 @@ After setting up Git and configuring SSH keys, you can follow these steps to clo
     git push origin <branch_name>
     ```
 
+6. Create a pull request to merge the changes into the main branch:
+   a. Go to the GitHub repository page and click the "Pull requests" tab.
+   b. Click the "New pull request" button.
+   c. In the "base" dropdown, make sure "main" is selected. In the "compare" dropdown, select the branch you created (`<branch_name>`).
+   d. Review the changes and click "Create pull request".
+   e. Add a title and description for the pull request, then click "Create pull request" again.
+
 Now the changes you made will be available in the remote repository on GitHub.
