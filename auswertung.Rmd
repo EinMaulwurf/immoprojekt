@@ -508,16 +508,30 @@ summary(lm_miete_jahr)
 Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret wissen wir nun, dass die Miete pro Jahr im Schnitt um $\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt sich nicht sinnvoll interpretieren, dieser würde die Miete im Jahr 0 angeben. Interessant ist für uns noch der Wert der t-Statistik beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit, dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9 Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden allgemeinen Inflationsniveau von unter 2%.
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier der Einfachheit als Dichte dargestellt.
-
 ```{r}
-lm_miete_jahr$residuals %>%
-  data.frame(residuals = .) %>%
-  ggplot(aes(x = residuals))+
-  geom_density(bw = .1)+
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1))+
+plot1 <- lm_miete_jahr$residuals %>%
+  data.frame(resids = .) %>%
+  ggplot(aes(x = resids))+
+  geom_density()+
+  coord_cartesian(xlim = c(-1, 1))+
   theme_bw()+
   labs(x = "Residuen", y = "Dichte")
+
+plot2 <- lm_miete_jahr$residuals %>%
+  data.frame(resids = .) %>%
+  slice_sample(prop = .5) %>%
+  ggplot(aes(sample = resids)) +
+  stat_qq(alpha = .1, size = .2) +
+  stat_qq_line() +
+  xlab("Theoretische Quantile") +
+  ylab("Stichproben-Quantile")+
+  theme_bw()
+  
+ggarrange(plot1, plot2, nrow = 1)
+
+ggsave("./plots/plot_regression_miete_jahr.pdf")
 ```
+
 
 Im Ergebnis sehen wir eine fast perfekte Normalverteilung.
 
