@@ -571,6 +571,31 @@ summary(lm_miete_brennpunkt)
 
 **TODO** Interpretieren
 
+Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
+```{r}
+plot1 <- lm_miete_brennpunkt$residuals %>%
+  data.frame(resids = .) %>%
+  ggplot(aes(x = resids))+
+  geom_density()+
+  coord_cartesian(xlim = c(-1, 1))+
+  theme_bw()+
+  labs(x = "Residuen", y = "Dichte")
+
+plot2 <- lm_miete_brennpunkt$residuals %>%
+  data.frame(resids = .) %>%
+  slice_sample(prop = .5) %>%
+  ggplot(aes(sample = resids)) +
+  stat_qq(alpha = .1, size = .2) +
+  stat_qq_line() +
+  xlab("Theoretische Quantile") +
+  ylab("Stichproben-Quantile")+
+  theme_bw()
+  
+ggarrange(plot1, plot2, nrow = 1)
+
+ggsave("./plots/plot_regression_brennpunkte.pdf")
+```
+
 Jetzt Regression mit den verschiedenen Clustern
 ```{r}
 r1_id_cluster <- data_social %>%
