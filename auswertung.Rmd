@@ -673,6 +673,39 @@ Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich
 
 ## Mietbelastung (Miete / Einkommen)
 
+Erstmal einen Boxplot
+```{r}
+data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  filter(!is.na(cluster)) %>%
+  filter(jahr == 2015) %>%
+  slice_sample(n = 100000) %>%
+  ggplot(aes(x = cluster, y = mietbelastung, group = cluster))+
+  #geom_boxplot(outlier.shape = NA)+
+  geom_violin()+
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.5,
+               aes(colour = "Mean"))+
+  stat_summary(fun = "median",
+               geom = "crossbar", 
+               width = 0.5,
+               aes(colour = "Median"))+
+  scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
+  coord_cartesian(ylim = c(0, .5))+
+  theme_bw()+
+  theme(legend.position = "right")+
+  labs(x = "Cluster",
+       y = "Mietbelastung",
+       color = element_blank())
+
+ggsave("./plots/plot_mietbelastung_2015.pdf")
+```
+
+
 ```{r}
 lm_mietbelastung <- data_social %>%
   left_join(r1_id_cluster, by = "r1_id") %>%
