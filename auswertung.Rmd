@@ -35,6 +35,9 @@ library(vroom)
 # Für allgemeine Datenmanipulation und Plotten
 library(tidyverse)
 
+# Für tidy Regressionsergebnisse
+library(broom)
+
 # Fürs Arbeiten mit Geodaten
 library(sf)
 ```
@@ -519,7 +522,7 @@ plot1 <- lm_miete_jahr$residuals %>%
 
 plot2 <- lm_miete_jahr$residuals %>%
   data.frame(resids = .) %>%
-  slice_sample(prop = .5) %>%
+  slice_sample(prop = .1) %>%
   ggplot(aes(sample = resids)) +
   stat_qq(alpha = .1, size = .2) +
   stat_qq_line() +
@@ -597,7 +600,7 @@ plot1 <- lm_miete_brennpunkt$residuals %>%
 
 plot2 <- lm_miete_brennpunkt$residuals %>%
   data.frame(resids = .) %>%
-  slice_sample(prop = .5) %>%
+  slice_sample(prop = .1) %>%
   ggplot(aes(sample = resids)) +
   stat_qq(alpha = .1, size = .2) +
   stat_qq_line() +
@@ -653,7 +656,7 @@ plot1 <- lm_miete_cluster$residuals %>%
 
 plot2 <- lm_miete_cluster$residuals %>%
   data.frame(resids = .) %>%
-  slice_sample(prop = .5) %>%
+  slice_sample(prop = .1) %>%
   ggplot(aes(sample = resids)) +
   stat_qq(alpha = .1, size = .2) +
   stat_qq_line() +
@@ -671,9 +674,42 @@ Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich
 ## Mietbelastung (Miete / Einkommen)
 
 ```{r}
+lm_mietbelastung <- data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  filter(!is.na(cluster)) %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  lm(mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
+summary(lm_mietbelastung)
 
+lm_mietbelastung %>%
+  broom::augment() %>%
+  slice_sample(n = 1000, by = cluster) %>%
+  ggplot(aes(x = jahr, y = mietbelastung, color = cluster))+
+  geom_point(alpha = .05)+
+  geom_line(aes(y = .fitted))+
+  coord_cartesian(ylim = c(0, .4))+
+  scale_x_continuous(breaks = c(2010, 2013, 2016, 2019)) +
+  facet_wrap(~cluster)+
+  theme_bw()+
+  labs(x = "Jahr",
+       y = "Mietbelastung")+
+  theme(legend.position = "none")
+
+ggsave("./plots/plot_regression_mietbelastung.pdf")
 ```
 
+
+**TODO:** Rausfinden, warum die Jahre 2006 bis 2008 in data social fehlen
+
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 3: Wohlhabende Seniorengemeinschaften
+- Cluster 4: Multikulturelle Ballungsräume
+
+**TODO:** Interpretieren
+**TODO:** Rausfinden, warum das R^2 hier so viel kleiner ist als bei den Regressionen oben (mit `log(mietekalt_m2) ~ jahr + cluster + cluster:jahr`)
 
 # Ideen, Testen & Ausprobieren
 
