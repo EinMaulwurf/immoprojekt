@@ -384,7 +384,12 @@ Betrachten wir beispielsweise Cluster 3:
 - Die Anzahl der Einfamilienhäuser ist im Vergleich groß, aber kleiner als in Cluster 1.
 - Der Anteil der Bevölkerung über 60 Jahre ist ebenso mit Abstand am größten.
 
-Zusammenfassend könnte man Cluster 3 also als Ort bezeichnen, wo Reichtum, Ruhe und Rentner regieren!
+Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir eine zusammenfassende Beschreibung für die 4 Gebiete erstellt:
+
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 3: Wohlhabende Seniorengemeinschaften
+- Cluster 4: Multikulturelle Ballungsräume
 
 ## Zeitliche Stabilität der Cluster
 Sind die Cluster über die Zeit stabil? Das ist wichtig falls wir Regressionen basierend auf diesen Clusterungen vornehmen.
@@ -535,7 +540,7 @@ Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standartfehler 
 coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
 ```
 
-Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. ALlerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt.
+Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt.
 
 ## Miete in "Brennpunkten" und Clustern
 
@@ -582,6 +587,12 @@ data_social %>%
   right_join(data_rent, by = c("r1_id", "jahr")) %>%
   lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .) %>%
   summary()
+```
+
+## Mietbelastung (Miete / Einkommen)
+
+```{r}
+
 ```
 
 
