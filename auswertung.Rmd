@@ -748,6 +748,7 @@ ggsave("./plots/plot_regression_mietbelastung.pdf")
 
 ```{r}
 1+1
+hallo
 ```
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
