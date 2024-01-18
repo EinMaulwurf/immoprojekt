@@ -518,12 +518,20 @@ lm_miete_jahr <- data_rent %>%
   lm(log(mietekalt_m2) ~ jahr, data = .)
 
 summary(lm_miete_jahr)
+
+stargazer(lm_miete_jahr, 
+          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
+          covariate.labels = c("Jahr", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
 ```
 
 Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret wissen wir nun, dass die Miete pro Jahr im Schnitt um $\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt sich nicht sinnvoll interpretieren, dieser würde die Miete im Jahr 0 angeben. Interessant ist für uns noch der Wert der t-Statistik beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit, dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9 Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden allgemeinen Inflationsniveau von unter 2%.
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier der Einfachheit als Dichte dargestellt.
-```{r}
+```{r fig.width=5, fig.height=2}
 plot1 <- lm_miete_jahr$residuals %>%
   data.frame(resids = .) %>%
   ggplot(aes(x = resids))+
@@ -544,7 +552,7 @@ plot2 <- lm_miete_jahr$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_miete_jahr.png")
+ggsave("./plots/plot_regression_miete_jahr.png", width = 5, height = 2)
 ```
 
 
@@ -561,17 +569,26 @@ data_rent %>%
   round(2)
 ```
 
-Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass die Varianz über die Jahre steigt, die Preise für Wohnungen streuen also immer weiter. Mathematisch bringt das Probleme mit der Robustheit der Schätzung, insbesondere kann dies zu Verzerrungne in den Standartfehlern führen. Diese werden wiederum für den t-Test und die Bestimmung der statistischen Signifikanz benötigt.
+Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass die Varianz über die Jahre steigt, die Preise für Wohnungen streuen also immer weiter. Mathematisch bringt das Probleme mit der Robustheit der Schätzung, insbesondere kann dies zu Verzerrungne in den Standardfehlern führen. Diese werden wiederum für den t-Test und die Bestimmung der statistischen Signifikanz benötigt.
 
-Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standartfehler und Vergleichen die Ergebnisse mit der ursprünglichen Regression. Dafür wird eine "heteroskedasticity-consistent" (HC) Kovarianzmatrix geschätzt.
+Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standardfehler und Vergleichen die Ergebnisse mit der ursprünglichen Regression. Dafür wird eine "heteroskedasticity-consistent" (HC) Kovarianzmatrix geschätzt.
 
 ```{r}
-coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
+coeftest_lm_miete_jahr <- coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
+coeftest_lm_miete_jahr
+
+stargazer(coeftest_lm_miete_jahr, 
+          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
+          covariate.labels = c("Jahr", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
 ```
 
-Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standartfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standartfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt. Aufgrund dieser kleinen Abweichung, werden wir in den restlichen Auswertungen keine gesonderten Tests mehr aufgrund von Heteroskedastizität durchführen, wenn der p-Wert wie in diesem Fall extrehm nah an Null liegt. Denn selbst wenn die t-Statistiken leicht verzerrt sind, ändert das nichts an der Interpretation.
+Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standardfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standardfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt. Aufgrund dieser kleinen Abweichung, werden wir in den restlichen Auswertungen keine gesonderten Tests mehr aufgrund von Heteroskedastizität durchführen, wenn der p-Wert wie in diesem Fall extrehm nah an Null liegt. Denn selbst wenn die t-Statistiken leicht verzerrt sind, ändert das nichts an der Interpretation.
 
-## Miete in "Brennpunkten" und Clustern
+## Miete und Mietbelastung in "Brennpunkten"
 
 Hat sich die Miete in Brennpunkten über die Jahre stärker erhöht?
 
@@ -582,6 +599,8 @@ Als Regressionsmodell verwenden wir **TODO…** mit einem Interaktionsterm zwisc
 **TODO:** Erklären, wieso wir $jahr = jahr - 2007$ rechnen (um den Effekt von ist_brennpunkt und dem Intercept interpretieren zu können…)
 
 ```{r}
+# Regression Miete
+
 lm_miete_brennpunkt <- data_social %>%
   filter(jahr == 2015) %>%
   filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
@@ -596,12 +615,72 @@ lm_miete_brennpunkt <- data_social %>%
   lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
 
 summary(lm_miete_brennpunkt)
+
+stargazer(lm_miete_brennpunkt, 
+          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
+          covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
 ```
+
+```{r}
+r1_id_brennpunkt <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt)
+
+lm_miete_brennpunkt <- data_rent %>%
+  left_join(r1_id_brennpunkt, by = join_by(r1_id)) %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
+
+summary(lm_miete_brennpunkt)
+```
+
+
+```{r}
+# Regression Mietbelastung
+
+lm_mietbelastung_brennpunkt <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt, kaufkraft_pro_haushalt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(mietbelastung ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
+
+summary(lm_mietbelastung_brennpunkt)
+```
+
+```{r}
+# Stargazer Tabelle
+
+stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt, 
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
+          covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
+```
+
 
 **TODO** Interpretieren
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
-```{r}
+```{r fig.width=5, fig.height=2}
 plot1 <- lm_miete_brennpunkt$residuals %>%
   data.frame(resids = .) %>%
   ggplot(aes(x = resids))+
@@ -622,11 +701,16 @@ plot2 <- lm_miete_brennpunkt$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_brennpunkte.png")
+ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
 ```
+
+## Miete in Clustern
+Hat sich die Miete in in den verschiedenen Clustern gleichmäßig erhöht?
 
 Jetzt Regression mit den verschiedenen Clustern
 ```{r}
+# Regression Miete
+
 r1_id_cluster <- data_social %>%
   filter(jahr == 2015) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
@@ -643,7 +727,37 @@ lm_miete_cluster <- data_social %>%
   lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .)
 
 summary(lm_miete_cluster)
+
+
 ```
+
+```{r}
+# Regression Mietbelastung
+
+lm_mietbelastung_cluster <- data_social %>%
+  left_join(r1_id_cluster, by = "r1_id") %>%
+  filter(!is.na(cluster)) %>%
+  right_join(data_rent, by = c("r1_id", "jahr")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  lm(mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
+
+summary(lm_mietbelastung_cluster)
+```
+
+```{r}
+# Stargazer Tabelle
+
+stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
+          covariate.labels = c("Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
+
+```
+
 
 **ACHTUNG:** Wir müssen je das oberste und unterste 1% der Beobachtungen rauswerfen, da diese zu einer Verletzung der Normalverteilungsannahme führen. Das führt zu leicht unterschiedlichen Werten für die Betas.
 
@@ -657,7 +771,7 @@ Zur Erinnerung, die Cluster haben wir wie folgt beschrieben:
 Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem "kleinen" Modell, schon beachtlich.
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
-```{r}
+```{r fig.width=5, fig.height=2}
 plot1 <- lm_miete_cluster$residuals %>%
   data.frame(resids = .) %>%
   ggplot(aes(x = resids))+
@@ -678,7 +792,7 @@ plot2 <- lm_miete_cluster$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_cluster.png")
+ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
 ```
 
 Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser) vertrauen.
