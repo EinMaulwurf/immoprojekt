@@ -158,7 +158,7 @@ ggplot()+
   #geom_sf_text(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), aes(label = Gemeinde_n), size = 3)+
   theme_bw()
 
-ggsave("./plots/plot_berlin_karte.pdf")
+ggsave("./plots/plot_berlin_karte.png")
 ```
 
 Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von 1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir betrachten also auch teilweise Flächen, die eigentlich nicht mehr zu Berlin gehören, da wir alle Quadrate einbeziehen, die (auch nur teilweise) mit den Stadtgrenzen überlappen. Die andere Möglichkeit wäre gewesen, die Fläche zu unterschätzen und nur Quadrate zu betrachten, die komplett innerhalb der Stadtgrenzen liegen.
@@ -209,7 +209,7 @@ ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
           nrow = 1)
 
-ggsave("./plots/plot_miete.pdf")
+ggsave("./plots/plot_miete.png")
 ```
 
 Mittlere Kaltmiete auf Karte
@@ -271,7 +271,7 @@ ggarrange(plot1, plot2, plot3, nrow = 1)
 
 #rm(data_rent_sf_plot)
 
-ggsave("./plots/plot_miete_karte_2015.pdf")
+ggsave("./plots/plot_miete_karte_2015.png", width = 7.5, height = 2.5)
 ```
 
 
@@ -343,7 +343,7 @@ plot4 <- data_social_sf %>%
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
-ggsave("./plots/plot_data_social_2015.pdf")
+ggsave("./plots/plot_data_social_2015.png")
 ```
 
 
@@ -497,7 +497,7 @@ plot4 <- data_social_sf %>%
 
 ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 
-ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
+ggsave("./plots/plot_cluster_jahr_vergleich.png")
 ```
 
 **TODO:** Clusterfarben konsistent machen
@@ -544,7 +544,7 @@ plot2 <- lm_miete_jahr$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_miete_jahr.pdf")
+ggsave("./plots/plot_regression_miete_jahr.png")
 ```
 
 
@@ -622,7 +622,7 @@ plot2 <- lm_miete_brennpunkt$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_brennpunkte.pdf")
+ggsave("./plots/plot_regression_brennpunkte.png")
 ```
 
 Jetzt Regression mit den verschiedenen Clustern
@@ -678,7 +678,7 @@ plot2 <- lm_miete_cluster$residuals %>%
   
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_cluster.pdf")
+ggsave("./plots/plot_regression_cluster.png")
 ```
 
 Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser) vertrauen.
@@ -714,7 +714,7 @@ data_social %>%
        y = "Mietbelastung",
        color = element_blank())
 
-ggsave("./plots/plot_mietbelastung_2015.pdf")
+ggsave("./plots/plot_mietbelastung_2015.png")
 ```
 
 
@@ -742,7 +742,7 @@ lm_mietbelastung %>%
        y = "Mietbelastung")+
   theme(legend.position = "none")
 
-ggsave("./plots/plot_regression_mietbelastung.pdf")
+ggsave("./plots/plot_regression_mietbelastung.png")
 ```
 
 
