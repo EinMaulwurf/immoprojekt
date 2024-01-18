@@ -55,8 +55,6 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 
 # Summary Statistics
 
-**TODO**
-
 Überblick über die beiden Datensätze mit Anzahl an Beobachtungen, Mittelwert, Median, Quartilen und mehr.
 ```{r}
 data_social %>% select(-jahr, -r1_id) %>%
@@ -367,18 +365,20 @@ data_clustering <- data_social %>%
   scale()
 
 set.seed(1)
-kmeans_result_2010 <- kmeans(data_clustering, centers = 4)
+kmeans_result_2015 <- kmeans(data_clustering, centers = 4)
 
 data_social %>%
   filter(jahr == 2015) %>%
   drop_na() %>%
-  cbind(cluster = kmeans_result_2010$cluster) %>%
+  cbind(cluster = kmeans_result_2015$cluster) %>%
   mutate(cluster = as_factor(cluster)) %>%
   left_join(inspire_grid_berlin %>% select(r1_id), by = "r1_id") %>%
   st_as_sf() %>%
   ggplot()+
   geom_sf(aes(fill = cluster))+
   theme_bw()
+
+ggsave("./plots/plot_cluster_2015.png")
 ```
 
 Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in Berlin 2016 ![Wahlergebnissen Berlin 2016](https://img.welt.de/img/politik/deutschland/mobile158256707/6751622257-ci23x11-w2000/DWO-IP-WahlergebnisBerlin-js-eps.jpg)
@@ -386,6 +386,19 @@ Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in Berlin 2
 Wer steckt hinter den Clustern? Um diese Frage zu beantworten können wir die Mittelwerte der jeweiligen Cluster betrachten.
 ```{r}
 kmeans_result_2010$centers %>% t() %>% round(2)
+
+kmeans_result_2015$centers %>% t() %>% round(2)
+
+kmeans_result_2015$centers %>% t() %>% round(2) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>% cat()
 ```
 
 Die Werte können nicht direkt interpretiert werden, da sie vorher durch `scale()` mittelwertbereinigt und varianzbereinigt wurden. Was aber interpretiert werden kann ist der Unterschied zwischen den Werten.
@@ -401,10 +414,10 @@ Betrachten wir beispielsweise Cluster 3:
 
 Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir eine zusammenfassende Beschreibung für die 4 Gebiete erstellt:
 
-- Cluster 1: Stabile Wohngebiete
-- Cluster 2: Sozial herausgeforderte Viertel
+- Cluster 1: Multikulturelle Ballungsräume
+- Cluster 2: Stabile Wohngebiete
 - Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Multikulturelle Ballungsräume
+- Cluster 4: Sozial herausgeforderte Viertel
 
 ## Zeitliche Stabilität der Cluster
 Sind die Cluster über die Zeit stabil? Das ist wichtig falls wir Regressionen basierend auf diesen Clusterungen vornehmen.
@@ -511,16 +524,46 @@ Wie hat sich die Miete im Laufe der Jahre geändert?
 
 Um diese Frage zu beantworten schätzen wir das folgende Regressionsmodell: $\ln(\text{Kaltmiete pro Quadratmeter}_i) = \beta_0 + \beta_1 \cdot \text{jahr}_i + \epsilon_i$. Wir benutzen den Logarithmus, um um näher an eine Normalverteilung der Residuen (siehe unten) heranzukommen. Nur das erlaubt die Anwendung eines t-Tests zur Bestimmung der statistischen Signifikanz.
 ```{r}
+# Regression Miete
+
 lm_miete_jahr <- data_rent %>%
   mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
   filter(!is.na(mietekalt_m2)) %>%
   filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
   lm(log(mietekalt_m2) ~ jahr, data = .)
 
 summary(lm_miete_jahr)
+```
 
-stargazer(lm_miete_jahr, 
-          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
+Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret wissen wir nun, dass die Miete pro Jahr im Schnitt um $\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt sich interpretieren, wenn er zurücktransformiert wird. Das Jahr Null wurde auf 2007 gesetzt, so ergibt sich die Konstante, also die Mietbelastung im Jahr 2007, zu $\exp(1.701) = 5.48$. Interessant ist für uns noch der Wert der t-Statistik beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit, dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9 Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden allgemeinen Inflationsniveau von unter 2%.
+
+```{r}
+# Regression Mietbelastung
+
+lm_mietbelastung_jahr <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt, kaufkraft_pro_haushalt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(mietbelastung ~ jahr, data = .)
+
+summary(lm_mietbelastung_jahr)
+```
+
+Betrachtet man die Regression zur Mietbelastung, so erkennt man, dass auch diese über die Zeit angestiegen ist. Die abhängige Variable wurde in diesem Modell nicht log-transformiert, wodurch sich die Koeffizienten der Regression direkt interpretieren lassen. Die Konstante zeigt, dass die Mietbelastung im Jahr 2007 bei knapp 14\% liegt. Pro Jahr steigt dieser Wert dann im Durchschnitt um 1.3pp. Sowohl die Konstante als auch der Effekt pro Jahr sind statistisch signifikant.
+
+```{r}
+# Stargazer Tabelle
+
+stargazer(lm_miete_jahr, lm_mietbelastung_jahr, 
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
           covariate.labels = c("Jahr", "Konstante"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           no.space = TRUE,
@@ -528,9 +571,9 @@ stargazer(lm_miete_jahr,
           notes.label = "\\textit{Anmerkung:}")
 ```
 
-Das Ergebnis der Regression spiegelt das wieder, was bereits im Boxplot oben gezeigt wurde: Die Miete steigt im Durchschnitt pro Jahr. Konkret wissen wir nun, dass die Miete pro Jahr im Schnitt um $\exp(0.06015)-1=6.1\%$ steigt. Der Wert des $\beta_0$ (Intercept) lässt sich nicht sinnvoll interpretieren, dieser würde die Miete im Jahr 0 angeben. Interessant ist für uns noch der Wert der t-Statistik beziehungsweise der p-Wert. Dieser ist nahe 0 und zeigt somit starke statistische Signifikanz. Dies impliziert, dass die Wahrscheinlichkeit, dass der ermittelte Zusammenhang lediglich auf Zufall beruht, äußerst gering ist. Das ist durch die schiere Größe des Datensatzes (knapp 1.9 Mio. Beobachtungen) jedoch nicht weiter überraschend. Umso wichtiger ist es hingegen, auch auf die ökonomische Relevanz des Zusammenhangs zu achten. Eine Steigerung von knapp 6% pro Jahr ist jedoch auch ökonomisch relevant, liegt diese doch weit über dem zu dieser Zeit vorherrschenden allgemeinen Inflationsniveau von unter 2%.
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier der Einfachheit als Dichte dargestellt.
+
 ```{r fig.width=5, fig.height=2}
 plot1 <- lm_miete_jahr$residuals %>%
   data.frame(resids = .) %>%
@@ -607,33 +650,6 @@ lm_miete_brennpunkt <- data_social %>%
   mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
   select(r1_id, ist_brennpunkt) %>%
   right_join(data_rent, by = "r1_id") %>%
-  filter(!is.na(ist_brennpunkt)) %>%
-  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
-  filter(!is.na(mietekalt_m2)) %>%
-  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
-  mutate(jahr = jahr - 2007) %>%
-  lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
-
-summary(lm_miete_brennpunkt)
-
-stargazer(lm_miete_brennpunkt, 
-          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
-          covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
-          omit.stat = c("ser", "f"), single.row = FALSE, 
-          no.space = TRUE,
-          dep.var.caption = "\\textit{Abhängige Variable}",
-          notes.label = "\\textit{Anmerkung:}")
-```
-
-```{r}
-r1_id_brennpunkt <- data_social %>%
-  filter(jahr == 2015) %>%
-  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
-  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
-  select(r1_id, ist_brennpunkt)
-
-lm_miete_brennpunkt <- data_rent %>%
-  left_join(r1_id_brennpunkt, by = join_by(r1_id)) %>%
   filter(!is.na(ist_brennpunkt)) %>%
   mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
   filter(!is.na(mietekalt_m2)) %>%
