@@ -60,6 +60,9 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 Überblick über die beiden Datensätze mit Anzahl an Beobachtungen, Mittelwert, Median, Quartilen und mehr.
 ```{r}
 data_social %>% select(-jahr, -r1_id) %>%
+  mutate(kaufkraft_pro_haushalt_1000 = kaufkraft_pro_haushalt / 1000,
+         anzahl_haushalte_1000 = anzahl_haushalte / 1000) %>%
+  select(-kaufkraft_pro_haushalt, -anzahl_haushalte) %>%
   pivot_longer(cols = everything()) %>%
   group_by(name) %>%
   drop_na() %>%
@@ -70,7 +73,17 @@ data_social %>% select(-jahr, -r1_id) %>%
             Pctl.25 = quantile(value, probs = 0.25),
             Pctl.50 = quantile(value, probs = 0.5),
             Pctl.75 = quantile(value, probs = 0.75),
-            max = max(value))
+            max = max(value)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
 
 data_rent %>% select(-jahr, -r1_id) %>%
   pivot_longer(cols = everything()) %>%
@@ -83,7 +96,17 @@ data_rent %>% select(-jahr, -r1_id) %>%
             Pctl.25 = quantile(value, probs = 0.25),
             Pctl.50 = quantile(value, probs = 0.5),
             Pctl.75 = quantile(value, probs = 0.75),
-            max = max(value))
+            max = max(value)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>%
+  cat()
 ```
 
 Korrelation zwischen Variablen
@@ -98,28 +121,17 @@ mcor_social[upper.tri(mcor_social)] <- NA
 
 mcor_social %>%
   data.frame() %>%
-  round(2)
-# Hinzufügen, um Latex Tabelle zu erhalten
-#  %>%
-#  kbl(
-#    format = "latex",
-#    digits = 2,
-#    booktabs = T,
-#    toprule = "\\hline \\hline",
-#    midrule = "\\hline",
-#    bottomrule = "\\hline \\hline",
-#    linesep = "",
-#  ) %>%
-#  cat()
-
-mcor_social %>%
-  data.frame() %>%
   round(2) %>%
-  rownames_to_column() %>%
-  pivot_longer(cols = -rowname) %>%
-  filter(!is.na(value), value != 1) %>%
-  arrange(desc(value)) %>%
-  rename(variable1 = rowname, variable2 = name, korrelation = value)
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>%
+  cat()
 ```
 
 Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
