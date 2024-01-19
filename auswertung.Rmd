@@ -877,14 +877,10 @@ ggsave("./plots/plot_regression_mietbelastung.png")
 
 
 **TODO:** Rausfinden, warum die Jahre 2006 bis 2008 in data social fehlen
-
-- Cluster 1: Stabile Wohngebiete
-- Cluster 2: Sozial herausgeforderte Viertel
-- Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Multikulturelle Ballungsräume
-
 **TODO:** Interpretieren
 **TODO:** Rausfinden, warum das R^2 hier so viel kleiner ist als bei den Regressionen oben (mit `log(mietekalt_m2) ~ jahr + cluster + cluster:jahr`)
+
+# LQ Quotienten
 
 # Ideen, Testen & Ausprobieren
 
