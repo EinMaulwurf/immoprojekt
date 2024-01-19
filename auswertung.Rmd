@@ -637,7 +637,7 @@ Hat sich die Miete in Brennpunkten über die Jahre stärker erhöht?
 
 Hierzu müssen wir neben `data_rent` auch `data_social` verwenden. Wir definieren einen "Brennpunkt" als eine Gegend, in der die Arbeitslosenquote 2015 über 10% liegt und wo die Kaufkraft im unteren 20% Quantil liegt.
 
-Als Regressionsmodell verwenden wir **TODO…** mit einem Interaktionsterm zwischen dem Jahr und der binären Ist-Brennpunkt Variable.
+Als Regressionsmodell verwenden wir $\log(\text{Kaltmiete}_i) = \beta_0 + \beta_1 \cdot \text{Jahr}_i + \beta_2 \cdot \text{Brennpunkt}_i + \beta_3 \cdot \text{Brennpunkt}_i\cdot \text{Jahr}_i + \epsilon_i$ mit einem Interaktionsterm zwischen dem Jahr und der binären Ist-Brennpunkt Variable.
 
 **TODO:** Erklären, wieso wir $jahr = jahr - 2007$ rechnen (um den Effekt von ist_brennpunkt und dem Intercept interpretieren zu können…)
 
@@ -660,6 +660,7 @@ lm_miete_brennpunkt <- data_social %>%
 summary(lm_miete_brennpunkt)
 ```
 
+Interpretation: Für Nicht-Brennpunktgebiete liegt log Kaltmiete pro m2 liegt in Jahr 2007 bei $\exp(1.733) = 5.66$ €/m2 und steigt pro Jahr um $\exp(5.736\cdot 10^{2})-1 = 5.9\%$. Handelt es sich um ein Brennpunktgebiet, so liegt die Miete im Jahr 2007 um $\exp(1.012\cdot 10^{-1}) = 0.90$ €/m2 niedriger, also bei $5.66 - 0.90 = 4.76$ €/m2. Von diesem niedrigeren Niveau steigt die Miete dann um $\exp(8.178 \cdot 10^{-3}) = 0.8\%$ pro Jahr stärker. Alle diese Effekte sind stark statistisch signifikant mit p-Werten nahe Null.
 
 ```{r}
 # Regression Mietbelastung
@@ -680,6 +681,8 @@ lm_mietbelastung_brennpunkt <- data_social %>%
 summary(lm_mietbelastung_brennpunkt)
 ```
 
+Interpretation: Für Nicht-Brennpunktgebiete liegt die Mietbelastung im Jahr 2007 bei $14.5\%$ und steigt von dort pro Jahr um $1.2\text{pp}$. Handelt es sich um ein Brennpunktgebiet, so liegt die Mietbelastung 2007 um $1.9\%$ niedriger bei $14.5\% - 1.9\% = 12.6\%$. Von dort steigt diese jedoch um $0.2\%$ stärker an, also um insgesamt um knapp $1.5\text{pp}$. Wieder sind alle Effekte statistisch signifikant.
+
 ```{r}
 # Stargazer Tabelle
 
@@ -692,8 +695,6 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
           notes.label = "\\textit{Anmerkung:}")
 ```
 
-
-**TODO** Interpretieren
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
 ```{r fig.width=5, fig.height=2}
@@ -740,12 +741,15 @@ lm_miete_cluster <- data_social %>%
   filter(!is.na(cluster)) %>%
   right_join(data_rent, by = c("r1_id", "jahr")) %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(jahr = jahr - 2007) %>%
   lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .)
 
 summary(lm_miete_cluster)
-
-
 ```
+
+
+Die Interpretation geschieht bei diesem Regressionsmodell ähnlich wie bereits bei dem Modell mit den Brennpunktgebieten, nur dass es nun statt einer binären Variable eine kategorische Variable Cluster mit vier Leveln gibt. Betrachten wir den Regressions-Output, fällt auf, dass dort Cluster1 nicht auftaucht. Das ist also die Baseline.
+Im Jahr 2007 startet Cluster1 also mit einer Kaltmiete von $\exp(1.63) = 5.14$ €/m\textsuperscript{2} und steigt pro Jahr um $\exp(0.056)-1=5.82\%$. Cluster2 hingegen startet mit einer Kaltmiete um $\exp(0.031) = 0.97$ €/m\textsuperscript{2} niedriger als Cluster1. Die Entwicklung in Cluster2 ist hingegen um $\exp(0.0054266)-1 = 0.54\%$ pro Jahr höher.
 
 ```{r}
 # Regression Mietbelastung
