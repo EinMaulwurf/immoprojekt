@@ -760,6 +760,7 @@ lm_mietbelastung_cluster <- data_social %>%
   right_join(data_rent, by = c("r1_id", "jahr")) %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  mutate(jahr = jahr - 2007) %>%
   lm(mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
 
 summary(lm_mietbelastung_cluster)
@@ -879,12 +880,71 @@ lm_mietbelastung %>%
 ggsave("./plots/plot_regression_mietbelastung.png")
 ```
 
-
-**TODO:** Rausfinden, warum die Jahre 2006 bis 2008 in data social fehlen
 **TODO:** Interpretieren
 **TODO:** Rausfinden, warum das R^2 hier so viel kleiner ist als bei den Regressionen oben (mit `log(mietekalt_m2) ~ jahr + cluster + cluster:jahr`)
 
 # LQ Quotienten
+
+```{r}
+data_lq <- data_social_sf %>%
+  select(r1_id, jahr, arbeitslosenquote, anzahl_haushalte) %>%
+  group_by(jahr) %>%
+  mutate(LQ_arbeitslosenquote = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE))
+
+p1 <- test %>%
+  filter(jahr == 2005) %>%
+  ggplot()+
+  geom_sf(aes(fill = arbeitslosenquote))+
+  scale_fill_viridis_c()+
+  theme_void()+
+  theme(legend.position = "top")
+
+p2 <- test %>%
+  filter(jahr == 2005) %>%
+  ggplot()+
+  geom_sf(aes(fill = LQ_arbeitslosenquote))+
+  scale_fill_viridis_c()+
+  theme_void()+
+  theme(legend.position = "top")
+
+ggarrange(p1, p2, nrow = 1)
+```
+
+```{r}
+data_LQ <- data_social %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte) %>%
+  group_by(jahr) %>%
+  filter(!is.na(anzahl_haushalte)) %>%
+  mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE), 
+         .keep = c("unused")) %>%
+  ungroup()
+
+lm_LQ <- data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  slice_sample(n = 10000) %>%
+  lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+
+summary(lm_LQ)
+```
+
+**Interpretation:** Die Konstante ist in diesem Modell schwierig zu interpretieren. Sie würde die log Kaltmiete im Jahr 2007 in einem Gebiet mit keinen Arbeitslosen oder Ausländern widerspiegeln. Die Variable `jahr` zeigt wieder die mittlere Mietsteigerung pro Jahr, hier also $\exp(0.066363)-1 = 6.86\%$. Der Koeffizient bei `LQ_arbeitslose` zeigt durch das Vorzeichen, dass die Miete sinkt, je mehr Arbeitslosigkeit in einem Gebiet konzentriert ist. Der Wert lässt sich wieder schlechter interpretieren, er würde sagen, dass wenn der LQ Koeffizient um 1 steigt, die Miete um $\exp(-0.279016)-1 = -24.34\%$ steigt (bzw. sinkt).
+
+Interessanterweise ist die Korrelation zwischen LQ_arbeitslose und LQ_auslaender um einiges größer als zwischen den "Rohwerten" arbeitslosenquote und anteil_auslaender.
+```{r}
+data_LQ %>%
+  select(LQ_arbeitslose, LQ_auslaender) %>%
+  drop_na() %>%
+  summarise(cor = cor(LQ_arbeitslose, LQ_auslaender))
+
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender) %>%
+  drop_na() %>%
+  summarise(cor = cor(arbeitslosenquote, anteil_auslaender))
+```
+
 
 # Ideen, Testen & Ausprobieren
 
@@ -894,3 +954,4 @@ hallo
 ```
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
+
