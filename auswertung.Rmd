@@ -385,8 +385,6 @@ Cluster sind sehr ähnlich zu den Wahlergebnissen der Bundestagswahl in Berlin 2
 
 Wer steckt hinter den Clustern? Um diese Frage zu beantworten können wir die Mittelwerte der jeweiligen Cluster betrachten.
 ```{r}
-kmeans_result_2010$centers %>% t() %>% round(2)
-
 kmeans_result_2015$centers %>% t() %>% round(2)
 
 kmeans_result_2015$centers %>% t() %>% round(2) %>%
@@ -886,31 +884,6 @@ ggsave("./plots/plot_regression_mietbelastung.png")
 # LQ Quotienten
 
 ```{r}
-data_lq <- data_social_sf %>%
-  select(r1_id, jahr, arbeitslosenquote, anzahl_haushalte) %>%
-  group_by(jahr) %>%
-  mutate(LQ_arbeitslosenquote = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE))
-
-p1 <- test %>%
-  filter(jahr == 2005) %>%
-  ggplot()+
-  geom_sf(aes(fill = arbeitslosenquote))+
-  scale_fill_viridis_c()+
-  theme_void()+
-  theme(legend.position = "top")
-
-p2 <- test %>%
-  filter(jahr == 2005) %>%
-  ggplot()+
-  geom_sf(aes(fill = LQ_arbeitslosenquote))+
-  scale_fill_viridis_c()+
-  theme_void()+
-  theme(legend.position = "top")
-
-ggarrange(p1, p2, nrow = 1)
-```
-
-```{r}
 data_LQ <- data_social %>%
   select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte) %>%
   group_by(jahr) %>%
@@ -950,7 +923,6 @@ data_social %>%
 
 ```{r}
 1+1
-hallo
 ```
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
