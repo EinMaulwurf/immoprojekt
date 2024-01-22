@@ -51,6 +51,12 @@ data_social <- vroom("./daten/data_social.csv")
 inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg")
 bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
   st_transform("EPSG:3035")
+
+baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
+  janitor::clean_names() %>%
+  mutate(datum = ym(monat), .keep = "unused") %>%
+  rename(wert = originalwerte,
+         wert_trend = 2)
 ```
 
 # Summary Statistics
@@ -135,6 +141,20 @@ mcor_social %>%
 Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
 
 # Plotting
+## Baugenehmigungen
+```{r fig.width=5, fig.height=2}
+baugenehmigungen %>%
+  ggplot(aes(x = datum))+
+  geom_line(aes(y = wert), color = "darkgrey")+
+  geom_line(aes(y = wert_trend), color = "black", linewidth = 1)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y")+
+  theme_bw()+
+  labs(x = "Jahr",
+       y = "Anzahl")
+
+ggsave("./plots/plot_baugenehmigungen.png")
+```
+
 ## Berlin Karte
 Der INSPIRE Grid mit den Berliner Bezirken
 ```{r}
