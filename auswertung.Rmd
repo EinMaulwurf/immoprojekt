@@ -575,13 +575,13 @@ lm_mietbelastung_jahr <- data_social %>%
 summary(lm_mietbelastung_jahr)
 ```
 
-Betrachtet man die Regression zur Mietbelastung, so erkennt man, dass auch diese über die Zeit angestiegen ist. Die abhängige Variable wurde in diesem Modell nicht log-transformiert, wodurch sich die Koeffizienten der Regression direkt interpretieren lassen. Die Konstante zeigt, dass die Mietbelastung im Jahr 2007 bei knapp 14\% liegt. Pro Jahr steigt dieser Wert dann im Durchschnitt um 1.3pp. Sowohl die Konstante als auch der Effekt pro Jahr sind statistisch signifikant.
+NEU INTERPRETIEREN
 
 ```{r}
 # Stargazer Tabelle
 
 stargazer(lm_miete_jahr, lm_mietbelastung_jahr, 
-          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
           covariate.labels = c("Jahr", "Konstante"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           no.space = TRUE,
@@ -621,7 +621,7 @@ plot2 <- tibble(fitted = fitted(lm_mietbelastung_jahr),
 
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
+#ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
 ```
 
 Wie erwartet, liegt der Mittelwert der Residuen jeweils bei Null mit einer gewissen Streuung um diesen herum. Diese Streuung ist auf beiden Seiten (ins positive als auch ins negative) ungefähr gleich. Außerdem bleibt die Streuung über die Jahre ziemlich stabil. All dies spricht für ein Halten der Normalverteilungsannahme.
@@ -673,10 +673,11 @@ lm_mietbelastung_brennpunkt <- data_social %>%
   filter(!is.na(mietekalt_m2)) %>%
   filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(mietbelastung ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
+  lm(log(mietbelastung) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
 
 summary(lm_mietbelastung_brennpunkt)
 ```
+
 
 Interpretation: Für Nicht-Brennpunktgebiete liegt die Mietbelastung im Jahr 2007 bei $14.5\%$ und steigt von dort pro Jahr um $1.2\text{pp}$. Handelt es sich um ein Brennpunktgebiet, so liegt die Mietbelastung 2007 um $1.9\%$ niedriger bei $14.5\% - 1.9\% = 12.6\%$. Von dort steigt diese jedoch um $0.2\%$ stärker an, also um insgesamt um knapp $1.5\text{pp}$. Wieder sind alle Effekte statistisch signifikant.
 
@@ -684,7 +685,7 @@ Interpretation: Für Nicht-Brennpunktgebiete liegt die Mietbelastung im Jahr 200
 # Stargazer Tabelle
 
 stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt, 
-          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
           covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           no.space = TRUE,
@@ -694,28 +695,36 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
-```{r fig.width=5, fig.height=2}
-plot1 <- lm_miete_brennpunkt$residuals %>%
-  data.frame(resids = .) %>%
-  ggplot(aes(x = resids))+
-  geom_density()+
-  coord_cartesian(xlim = c(-1, 1))+
-  theme_bw()+
-  labs(x = "Residuen", y = "Dichte")
+```{r warning=FALSE, fig.width=5, fig.height=2}
+set.seed(1)
 
-plot2 <- lm_miete_brennpunkt$residuals %>%
-  data.frame(resids = .) %>%
-  slice_sample(prop = .1) %>%
-  ggplot(aes(sample = resids)) +
-  stat_qq(alpha = .1, size = .2) +
-  stat_qq_line() +
-  xlab("Theoretische Quantile") +
-  ylab("Stichproben-Quantile")+
-  theme_bw()
-  
+plot1 <- tibble(fitted = fitted(lm_miete_brennpunkt),
+       resids = resid(lm_miete_brennpunkt)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids)) +
+  geom_point(alpha = .05, size = .4) +
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw() +
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "Residuals",
+       subtitle = "Miete")
+
+
+
+plot2 <- tibble(fitted = fitted(lm_miete_brennpunkt),
+       resids = resid(lm_miete_brennpunkt)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids))+
+  geom_point(alpha = .05, size = .2)+
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw()+
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "",
+       subtitle = "Mietbelastung")
+
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
+#ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
 ```
 
 ## Miete in Clustern
