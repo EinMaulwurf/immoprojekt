@@ -711,7 +711,7 @@ plot1 <- tibble(fitted = fitted(lm_miete_brennpunkt),
 
 
 
-plot2 <- tibble(fitted = fitted(lm_miete_brennpunkt),
+plot2 <- tibble(fitted = fitted(lm_mietbelastung_brennpunkt),
        resids = resid(lm_miete_brennpunkt)) %>%
   slice_sample(n = 10000) %>%
   ggplot(aes(x = fitted, y = resids))+
@@ -767,7 +767,7 @@ lm_mietbelastung_cluster <- data_social %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(mietbelastung ~ jahr + cluster + cluster:jahr, data = .)
+  lm(log(mietbelastung) ~ jahr + cluster + cluster:jahr, data = .)
 
 summary(lm_mietbelastung_cluster)
 ```
@@ -776,7 +776,7 @@ summary(lm_mietbelastung_cluster)
 # Stargazer Tabelle
 
 stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
-          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "Mietbelastung (\\%)"), 
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
           covariate.labels = c("Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4", "Konstante"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           no.space = TRUE,
@@ -798,28 +798,36 @@ Zur Erinnerung, die Cluster haben wir wie folgt beschrieben:
 Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem "kleinen" Modell, schon beachtlich.
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
-```{r fig.width=5, fig.height=2}
-plot1 <- lm_miete_cluster$residuals %>%
-  data.frame(resids = .) %>%
-  ggplot(aes(x = resids))+
-  geom_density()+
-  coord_cartesian(xlim = c(-1, 1))+
-  theme_bw()+
-  labs(x = "Residuen", y = "Dichte")
+```{r warning=FALSE, fig.width=5, fig.height=2}
+set.seed(1)
 
-plot2 <- lm_miete_cluster$residuals %>%
-  data.frame(resids = .) %>%
-  slice_sample(prop = .1) %>%
-  ggplot(aes(sample = resids)) +
-  stat_qq(alpha = .1, size = .2) +
-  stat_qq_line() +
-  xlab("Theoretische Quantile") +
-  ylab("Stichproben-Quantile")+
-  theme_bw()
-  
+plot1 <- tibble(fitted = fitted(lm_miete_cluster),
+       resids = resid(lm_miete_cluster)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids)) +
+  geom_point(alpha = .05, size = .4) +
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw() +
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "Residuals",
+       subtitle = "Miete")
+
+
+
+plot2 <- tibble(fitted = fitted(lm_mietbelastung_cluster),
+       resids = resid(lm_mietbelastung_cluster)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids))+
+  geom_point(alpha = .05, size = .2)+
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw()+
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "",
+       subtitle = "Mietbelastung")
+
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
+#ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
 ```
 
 Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser) vertrauen.
