@@ -827,7 +827,7 @@ plot2 <- tibble(fitted = fitted(lm_mietbelastung_cluster),
 
 ggarrange(plot1, plot2, nrow = 1)
 
-#ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
+#ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
 ```
 
 Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser) vertrauen.
