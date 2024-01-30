@@ -162,6 +162,8 @@ baugenehmigungen %>%
 ## Berlin Karte
 Der INSPIRE Grid mit den Berliner Bezirken
 ```{r}
+set.seed(1)
+
 ggplot()+
   geom_sf(data = inspire_grid_berlin)+
   geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
@@ -177,8 +179,9 @@ ggplot()+
                            lineheight = 1,
                            fill = "white")+
   coord_sf(crs = 3035)+
-  #geom_sf_text(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), aes(label = Gemeinde_n), size = 3)+
-  theme_bw()
+  theme_bw()+
+  labs(x = element_blank(),
+       y = element_blank())
 
 #ggsave("./plots/plot_berlin_karte.png")
 ```
@@ -390,6 +393,31 @@ set.seed(1)
 kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
 ```
 
+Schauen wieviele Cluster wir benutzen sollten.
+```{r fig.width=5, fig.height=2}
+set.seed(1)
+
+max_cluster <- 8
+
+wss_sum <- numeric(max_cluster)
+
+for(n_cluster in 1:max_cluster){
+  kmeans_result_2015 <- kmeans(data_clustering_2015, centers = n_cluster)
+  wss_sum[n_cluster] <- kmeans_result_2015$tot.withinss
+}
+
+tibble(n_cluster = 1:max_cluster,
+       totss = wss_sum) %>%
+  ggplot(aes(x = n_cluster, y = totss))+
+  geom_line()+
+  scale_x_continuous(breaks = 1:8)+
+  theme_bw()+
+  labs(x = "Anzahl Cluster", y = "Total WSS")
+
+#ggsave("./plots/plot_cluster_elbow.png")
+```
+
+
 Und jetzt Clustern für alle Jahre mit dem Output von `kmeans_result_2015`
 
 ```{r}
@@ -474,7 +502,7 @@ Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir eine zusamm
 - Cluster 3: Wohlhabende Seniorengemeinschaften
 - Cluster 4: Sozial herausgeforderte Viertel
 
-```{r, fig.width=7.5, fig.height=2.5}
+```{r, fig.width=7.5, fig.height=2}
 plot1 <- data_social_sf %>%
   filter(jahr == 2005) %>%
   select(r1_id, jahr, anzahl_haushalte, arbeitslosenquote, kaufkraft_pro_haushalt, anteil_auslaender, anteil_efh, anteil_60_plus) %>%
