@@ -837,22 +837,21 @@ Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich
 
 ```{r}
 data_LQ <- data_social %>%
-  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte) %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
   group_by(jahr) %>%
   filter(!is.na(anzahl_haushalte)) %>%
   mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
-         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE), 
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE),
          .keep = c("unused")) %>%
   ungroup()
 
-lm_LQ <- data_rent %>%
+lm_mietekalt_LQ <- data_rent %>%
   left_join(data_LQ, by = c("jahr", "r1_id")) %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(jahr = jahr - 2007) %>%
-  slice_sample(n = 10000) %>%
   lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
 
-summary(lm_LQ)
+summary(lm_mietekalt_LQ)
 ```
 
 **Interpretation:** Die Konstante ist in diesem Modell schwierig zu interpretieren. Sie würde die log Kaltmiete im Jahr 2007 in einem Gebiet mit keinen Arbeitslosen oder Ausländern widerspiegeln. Die Variable `jahr` zeigt wieder die mittlere Mietsteigerung pro Jahr, hier also $\exp(0.066363)-1 = 6.86\%$. Der Koeffizient bei `LQ_arbeitslose` zeigt durch das Vorzeichen, dass die Miete sinkt, je mehr Arbeitslosigkeit in einem Gebiet konzentriert ist. Der Wert lässt sich wieder schlechter interpretieren, er würde sagen, dass wenn der LQ Koeffizient um 1 steigt, die Miete um $\exp(-0.279016)-1 = -24.34\%$ steigt (bzw. sinkt).
@@ -870,6 +869,62 @@ data_social %>%
   summarise(cor = cor(arbeitslosenquote, anteil_auslaender))
 ```
 
+```{r}
+lm_mietbelastung_LQ <- data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+
+summary(lm_mietbelastung_LQ)
+```
+
+```{r}
+# Stargazer Tabelle
+
+stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
+          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
+          covariate.labels = c("Jahr", "LQ Arbeitslose", "LQ Auslaenderanteil", "Konstante"),
+          omit.stat = c("ser", "f"), single.row = FALSE, 
+          no.space = TRUE,
+          dep.var.caption = "\\textit{Abhängige Variable}",
+          notes.label = "\\textit{Anmerkung:}")
+```
+
+
+Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
+```{r warning=FALSE, fig.width=5, fig.height=2}
+set.seed(1)
+
+plot1 <- tibble(fitted = fitted(lm_mietekalt_LQ),
+       resids = resid(lm_mietekalt_LQ)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids)) +
+  geom_point(alpha = .05, size = .4) +
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw() +
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "Residuals",
+       subtitle = "Miete")
+
+
+
+plot2 <- tibble(fitted = fitted(lm_mietbelastung_LQ),
+       resids = resid(lm_mietbelastung_LQ)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids))+
+  geom_point(alpha = .05, size = .2)+
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw()+
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "",
+       subtitle = "Mietbelastung")
+
+ggarrange(plot1, plot2, nrow = 1)
+
+#ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
+```
 
 # Ideen, Testen & Ausprobieren
 
