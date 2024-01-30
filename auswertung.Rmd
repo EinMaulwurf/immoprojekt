@@ -150,7 +150,7 @@ baugenehmigungen %>%
   scale_x_date(date_breaks = "2 years", date_labels = "%Y")+
   theme_bw()+
   labs(x = "Jahr",
-       y = "Anzahl")
+       y = "Anzahl in 1000")
 
 ggsave("./plots/plot_baugenehmigungen.png")
 ```
@@ -570,7 +570,7 @@ lm_mietbelastung_jahr <- data_social %>%
   filter(!is.na(mietekalt_m2)) %>%
   filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(mietbelastung ~ jahr, data = .)
+  lm(log(mietbelastung) ~ jahr, data = .)
 
 summary(lm_mietbelastung_jahr)
 ```
@@ -590,64 +590,43 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 ```
 
 
-Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür betrachten wir zuerst die Verteilung der Residuen, hier der Einfachheit als Dichte dargestellt.
+Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür erstellen wir für beide Regressionsmodelle jeweils einen Plot, bei dem die Residuen den gefitteten, also durch das Modell vorhergesagten Werten gegenübergestellt werden.
 
-```{r fig.width=5, fig.height=2}
-plot1 <- lm_miete_jahr$residuals %>%
-  data.frame(resids = .) %>%
-  ggplot(aes(x = resids))+
-  geom_density()+
-  coord_cartesian(xlim = c(-1, 1))+
+```{r warning=FALSE, fig.width=5, fig.height=2}
+set.seed(1)
+
+plot1 <- tibble(fitted = fitted(lm_miete_jahr),
+       resids = resid(lm_miete_jahr)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids)) +
+  geom_point(alpha = .05, size = .4) +
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw() +
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "Residuals",
+       subtitle = "Miete")
+
+
+
+plot2 <- tibble(fitted = fitted(lm_mietbelastung_jahr),
+       resids = resid(lm_mietbelastung_jahr)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = fitted, y = resids))+
+  geom_point(alpha = .05, size = .2)+
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  labs(x = "Residuen", y = "Dichte")
+  theme(plot.subtitle = element_text(hjust = .5))+
+  labs(x = "Fitted", y = "",
+       subtitle = "Mietbelastung")
 
-plot2 <- lm_miete_jahr$residuals %>%
-  data.frame(resids = .) %>%
-  slice_sample(prop = .1) %>%
-  ggplot(aes(sample = resids)) +
-  stat_qq(alpha = .1, size = .2) +
-  stat_qq_line() +
-  xlab("Theoretische Quantile") +
-  ylab("Stichproben-Quantile")+
-  theme_bw()
-  
 ggarrange(plot1, plot2, nrow = 1)
 
-ggsave("./plots/plot_regression_miete_jahr.png", width = 5, height = 2)
+ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
 ```
 
+Wie erwartet, liegt der Mittelwert der Residuen jeweils bei Null mit einer gewissen Streuung um diesen herum. Diese Streuung ist auf beiden Seiten (ins positive als auch ins negative) ungefähr gleich. Außerdem bleibt die Streuung über die Jahre ziemlich stabil. All dies spricht für ein Halten der Normalverteilungsannahme.
 
-Im Ergebnis sehen wir eine ziemlich gute Normalverteilung. Links ist die Dichtefunktion der Residuen zu sehen und rechts ein QQ-Plot. Würden alle Punkte des QQ-Plots auf der Geraden liegen, so läge eine perfekte Normalverteilung in der Stichprobe vor. Dies ist hier nicht der Fall, da an den Rändern, insbesondere am rechten Rand, die Stichproben-Quantile über der Geraden liegen. Dies deutet auf eine (leicht) rechtsschiefe Verteilung hin.
 
-```{r}
-data_rent %>%
-  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
-  filter(!is.na(mietekalt_m2)) %>%
-  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
-  mutate(mietekalt_m2 = log(mietekalt_m2)) %>%
-  group_by(jahr) %>%
-  summarise(variance = var(mietekalt_m2)) %>%
-  round(2)
-```
-
-Ein Problem ist jedoch Heteroskedastizität. So nennt man das Phänomen von nicht stabilen Varianzen. Für diesen Fall konkret sehen wir, dass die Varianz über die Jahre steigt, die Preise für Wohnungen streuen also immer weiter. Mathematisch bringt das Probleme mit der Robustheit der Schätzung, insbesondere kann dies zu Verzerrungne in den Standardfehlern führen. Diese werden wiederum für den t-Test und die Bestimmung der statistischen Signifikanz benötigt.
-
-Um dieses Problem zu umgehen, berechnen wir im folgenden robuste Standardfehler und Vergleichen die Ergebnisse mit der ursprünglichen Regression. Dafür wird eine "heteroskedasticity-consistent" (HC) Kovarianzmatrix geschätzt.
-
-```{r}
-coeftest_lm_miete_jahr <- coeftest(lm_miete_jahr, vcov = vcovHC(lm_miete_jahr, type = "HC3"))
-coeftest_lm_miete_jahr
-
-stargazer(coeftest_lm_miete_jahr, 
-          dep.var.labels = "log Kaltmiete (€/m\\textsuperscript{2})", 
-          covariate.labels = c("Jahr", "Konstante"),
-          omit.stat = c("ser", "f"), single.row = FALSE, 
-          no.space = TRUE,
-          dep.var.caption = "\\textit{Abhängige Variable}",
-          notes.label = "\\textit{Anmerkung:}")
-```
-
-Wenn wir das Ergebnis dieser Schätzung mit dem des ursprünglichen Modells vergleichen, sehen wir keine Unterschiede bei den Schätzwerten der Betas. Die Standardfehler hingegen sind etwas größer. Das war zu erwarten, da durch die vorliegende Heteroskedastizität die Standardfehler in der ursprünglichen Regression verzerrt waren. Allerdings ist die Abweichung marginal, was sich auch in einem quasi unverändert bei fast Null liegendem p-Wert zeigt. Aufgrund dieser kleinen Abweichung, werden wir in den restlichen Auswertungen keine gesonderten Tests mehr aufgrund von Heteroskedastizität durchführen, wenn der p-Wert wie in diesem Fall extrehm nah an Null liegt. Denn selbst wenn die t-Statistiken leicht verzerrt sind, ändert das nichts an der Interpretation.
 
 ## Miete und Mietbelastung in "Brennpunkten"
 
