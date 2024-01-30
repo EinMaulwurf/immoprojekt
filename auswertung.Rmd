@@ -48,13 +48,13 @@ Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
 data_rent <- vroom("./daten/data_rent.csv")
 data_social <- vroom("./daten/data_social.csv")
 
-data_social_sf <- data_social %>%
-  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
-  st_as_sf()
-
 inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg")
 bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
   st_transform("EPSG:3035")
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
 
 baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
   janitor::clean_names() %>%
@@ -117,6 +117,7 @@ data_rent %>% select(-jahr, -r1_id) %>%
   cat()
 ```
 
+
 Korrelation zwischen Variablen
 ```{r}
 mcor_social <- data_social %>%
@@ -143,6 +144,46 @@ mcor_social %>%
 ```
 
 Die größte Korrelation liegt zwischen dem Anteil an Wohnblocks und der Anzahl der Haushalte vor. Das ist soweit nicht überraschend. Als nächstes folgt mit einem Korrelationskoeffizienten von 0.7 der Zusammenhang zwischen dem Kreditrisiko und dem Anteil an Wohnblocks.
+
+Problem mit Ausländeranteil in Data Social
+```{r}
+auslaender_berlin_destatis <- read_csv2("/Users/sebastiangeis/Downloads/12411-0014-DLAND_$F_flat.csv") %>%
+  janitor::clean_names() %>%
+  select(zeit, x2_auspraegung_label, x3_auspraegung_label, x4_auspraegung_label, bevstd_bevoelkerungsstand_anzahl) %>%
+  filter(x2_auspraegung_label == "Insgesamt",
+         x3_auspraegung_label %in% c("Ausl\xe4nder", "Insgesamt"),
+         x4_auspraegung_label == "Insgesamt") %>%
+  select(-x2_auspraegung_label, -x4_auspraegung_label) %>%
+  mutate(datum = dmy(zeit),
+         jahr = year(datum)+1) %>%
+  select(-zeit, -datum) %>%
+  filter(jahr %in% (data_social %>% distinct(jahr) %>% pull(jahr))) %>%
+  mutate(x3_auspraegung_label = case_when(x3_auspraegung_label == "Ausl\xe4nder" ~ "Auslaender",
+                                          TRUE ~ x3_auspraegung_label)) %>%
+  pivot_wider(names_from = x3_auspraegung_label, values_from = bevstd_bevoelkerungsstand_anzahl) %>%
+  mutate(anteil_auslaender_destatis = (Auslaender / Insgesamt) * 100) %>%
+  select(jahr, anteil_auslaender_destatis)
+
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
+  drop_na() %>%
+  group_by(jahr) %>%
+  summarise(mean_anteil_auslaender = mean(anteil_auslaender),
+            mean_anteil_auslaender_weighted = weighted.mean(anteil_auslaender, anzahl_haushalte)) %>%
+  left_join(auslaender_berlin_destatis, by = "jahr") %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+```
+
+Der Ausländeranteil springt plötzlich in 2017. Betrachtet man jedoch die räumliche Verteilung über Berlin, so bleibt diese ähnlich. Es scheint sich nur das Niveau insgesamt zu ändern. Dies könnte auf eine veränderte Methodik hindeuten.
 
 # Plotting
 ## Baugenehmigungen
@@ -884,7 +925,8 @@ data_LQ <- data_social %>%
 
 lm_mietekalt_LQ <- data_rent %>%
   left_join(data_LQ, by = c("jahr", "r1_id")) %>%
-  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
+         mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(jahr = jahr - 2007) %>%
   lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
 
@@ -894,7 +936,7 @@ summary(lm_mietekalt_LQ)
 **Interpretation:** Die Konstante ist in diesem Modell schwierig zu interpretieren. Sie würde die log Kaltmiete im Jahr 2007 in einem Gebiet mit keinen Arbeitslosen oder Ausländern widerspiegeln. Die Variable `jahr` zeigt wieder die mittlere Mietsteigerung pro Jahr, hier also $\exp(0.066363)-1 = 6.86\%$. Der Koeffizient bei `LQ_arbeitslose` zeigt durch das Vorzeichen, dass die Miete sinkt, je mehr Arbeitslosigkeit in einem Gebiet konzentriert ist. Der Wert lässt sich wieder schlechter interpretieren, er würde sagen, dass wenn der LQ Koeffizient um 1 steigt, die Miete um $\exp(-0.279016)-1 = -24.34\%$ steigt (bzw. sinkt).
 
 Interessanterweise ist die Korrelation zwischen LQ_arbeitslose und LQ_auslaender um einiges größer als zwischen den "Rohwerten" arbeitslosenquote und anteil_auslaender.
-```{r}
+```{r fig.height=7}
 data_LQ %>%
   select(LQ_arbeitslose, LQ_auslaender) %>%
   drop_na() %>%
@@ -970,4 +1012,80 @@ ggarrange(plot1, plot2, nrow = 1)
 ```
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
+
+## Wieso springt der Ausländeranteil in 2017 plötzlich?
+```{r fig.height=7}
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender, jahr) %>%
+  drop_na() %>%
+  filter(jahr >= 2016) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = arbeitslosenquote, y = anteil_auslaender, color = as_factor(jahr)))+
+  geom_point(alpha = .1)+
+  facet_wrap(~jahr, ncol = 1)
+
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
+  drop_na() %>%
+  filter(jahr >= 2016) %>%
+  ggplot(aes(x = anteil_auslaender))+
+  geom_density()+
+  facet_wrap(~jahr, ncol = 1)
+```
+
+```{r}
+auslaender_berlin_destatis <- read_csv2("/Users/sebastiangeis/Downloads/12411-0014-DLAND_$F_flat.csv") %>%
+  janitor::clean_names() %>%
+  select(zeit, x2_auspraegung_label, x3_auspraegung_label, x4_auspraegung_label, bevstd_bevoelkerungsstand_anzahl) %>%
+  filter(x2_auspraegung_label == "Insgesamt",
+         x3_auspraegung_label %in% c("Ausl\xe4nder", "Insgesamt"),
+         x4_auspraegung_label == "Insgesamt") %>%
+  select(-x2_auspraegung_label, -x4_auspraegung_label) %>%
+  mutate(datum = dmy(zeit),
+         jahr = year(datum)+1) %>%
+  select(-zeit, -datum) %>%
+  filter(jahr %in% (data_social %>% distinct(jahr) %>% pull(jahr))) %>%
+  mutate(x3_auspraegung_label = case_when(x3_auspraegung_label == "Ausl\xe4nder" ~ "Auslaender",
+                                          TRUE ~ x3_auspraegung_label)) %>%
+  pivot_wider(names_from = x3_auspraegung_label, values_from = bevstd_bevoelkerungsstand_anzahl) %>%
+  mutate(anteil_auslaender_destatis = (Auslaender / Insgesamt) * 100) %>%
+  select(jahr, anteil_auslaender_destatis)
+
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
+  drop_na() %>%
+  group_by(jahr) %>%
+  summarise(mean_anteil_auslaender = mean(anteil_auslaender),
+            mean_anteil_auslaender_weighted = weighted.mean(anteil_auslaender, anzahl_haushalte)) %>%
+  left_join(auslaender_berlin_destatis, by = "jahr") %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+```
+
+
+```{r fig.height=5}
+p1 <- data_social_sf %>%
+  filter(jahr %in% 2016) %>%
+  ggplot()+
+  geom_sf(aes(fill = anteil_auslaender))+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Ausländeranteil 2016")
+
+p2 <- data_social_sf %>%
+  filter(jahr %in% 2017) %>%
+  ggplot()+
+  geom_sf(aes(fill = anteil_auslaender))+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Ausländeranteil 2017")
+
+ggarrange(p1, p2, ncol = 1)
+```
 
