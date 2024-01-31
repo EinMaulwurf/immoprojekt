@@ -568,11 +568,7 @@ k-means clustering mit den Variablen
 - anteil_efh
 - anteil_60_plus
 
-Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
-
-Zuerst clustering nur für ein Jahr, dann verwenden wir die Cluster
-Center nochmal für alle Jahre. Somit sollten die Cluster über die Zeit
-stabil bleiben.
+Schauen wieviele Cluster wir benutzen sollten.
 
 ``` r
 data_clustering_2015 <- data_social %>%
@@ -582,17 +578,9 @@ data_clustering_2015 <- data_social %>%
   as.matrix() %>%
   scale()
 
+
 set.seed(1)
-kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
-```
-
-Schauen wieviele Cluster wir benutzen sollten.
-
-``` r
-set.seed(1)
-
 max_cluster <- 8
-
 wss_sum <- numeric(max_cluster)
 
 for(n_cluster in 1:max_cluster){
@@ -609,10 +597,21 @@ tibble(n_cluster = 1:max_cluster,
   labs(x = "Anzahl Cluster", y = "Total WSS")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_cluster_elbow.png")
+```
+
+Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
+
+Zuerst clustering nur für ein Jahr, dann verwenden wir die Cluster
+Center nochmal für alle Jahre. Somit sollten die Cluster über die Zeit
+stabil bleiben.
+
+``` r
+set.seed(1)
+kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
 ```
 
 Und jetzt Clustern für alle Jahre mit dem Output von
@@ -678,13 +677,13 @@ die Mittelwerte der jeweiligen Cluster betrachten.
 kmeans_result_2015$centers %>% t() %>% round(2)
 ```
 
-    ##                            1     2     3     4     5     6     7     8
-    ## anzahl_haushalte       -0.50 -0.06  0.45 -0.63 -0.67  1.73  2.97  0.39
-    ## arbeitslosenquote      -1.13  0.29  1.27 -0.06 -1.04  1.25  0.22  0.70
-    ## kaufkraft_pro_haushalt  0.64 -0.32 -0.53 -0.23  1.96 -0.59 -0.71 -0.94
-    ## anteil_auslaender      -0.36 -0.16 -0.35 -0.54 -0.59  3.31  0.74  1.00
-    ## anteil_efh              0.31 -0.53 -0.90  1.14  1.19 -1.10 -1.14 -0.93
-    ## anteil_60_plus          0.86  0.78 -1.08 -0.21  0.29 -1.63 -1.32 -0.20
+    ##                            1     2     3     4
+    ## anzahl_haushalte       -0.63  0.29 -0.53  2.12
+    ## arbeitslosenquote      -0.06  0.80 -1.02  0.79
+    ## kaufkraft_pro_haushalt -0.28 -0.62  1.02 -0.67
+    ## anteil_auslaender      -0.52  0.13 -0.42  2.10
+    ## anteil_efh              1.03 -0.83  0.52 -1.11
+    ## anteil_60_plus         -0.12 -0.21  0.72 -1.43
 
 ``` r
 kmeans_result_2015$centers %>% t() %>% round(2) %>%
@@ -700,16 +699,16 @@ kmeans_result_2015$centers %>% t() %>% round(2) %>%
 ```
 
     ## 
-    ## \begin{tabular}[t]{lrrrrrrrr}
+    ## \begin{tabular}[t]{lrrrr}
     ## \hline \hline
-    ##   & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8\\
+    ##   & 1 & 2 & 3 & 4\\
     ## \hline
-    ## anzahl\_haushalte & -0.50 & -0.06 & 0.45 & -0.63 & -0.67 & 1.73 & 2.97 & 0.39\\
-    ## arbeitslosenquote & -1.13 & 0.29 & 1.27 & -0.06 & -1.04 & 1.25 & 0.22 & 0.70\\
-    ## kaufkraft\_pro\_haushalt & 0.64 & -0.32 & -0.53 & -0.23 & 1.96 & -0.59 & -0.71 & -0.94\\
-    ## anteil\_auslaender & -0.36 & -0.16 & -0.35 & -0.54 & -0.59 & 3.31 & 0.74 & 1.00\\
-    ## anteil\_efh & 0.31 & -0.53 & -0.90 & 1.14 & 1.19 & -1.10 & -1.14 & -0.93\\
-    ## anteil\_60\_plus & 0.86 & 0.78 & -1.08 & -0.21 & 0.29 & -1.63 & -1.32 & -0.20\\
+    ## anzahl\_haushalte & -0.63 & 0.29 & -0.53 & 2.12\\
+    ## arbeitslosenquote & -0.06 & 0.80 & -1.02 & 0.79\\
+    ## kaufkraft\_pro\_haushalt & -0.28 & -0.62 & 1.02 & -0.67\\
+    ## anteil\_auslaender & -0.52 & 0.13 & -0.42 & 2.10\\
+    ## anteil\_efh & 1.03 & -0.83 & 0.52 & -1.11\\
+    ## anteil\_60\_plus & -0.12 & -0.21 & 0.72 & -1.43\\
     ## \hline \hline
     ## \end{tabular}
 
@@ -931,7 +930,7 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Tue, Jan 30, 2024 - 19:48:07
+    ## % Date and time: Wed, Jan 31, 2024 - 11:34:00
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1134,7 +1133,7 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Tue, Jan 30, 2024 - 19:48:10
+    ## % Date and time: Wed, Jan 31, 2024 - 11:34:04
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1238,33 +1237,25 @@ summary(lm_miete_cluster)
     ## 
     ## Residuals:
     ##      Min       1Q   Median       3Q      Max 
-    ## -1.14172 -0.17051 -0.01938  0.14774  1.38845 
+    ## -1.16214 -0.17849 -0.01785  0.15642  1.38710 
     ## 
     ## Coefficients:
-    ##                 Estimate Std. Error  t value Pr(>|t|)    
-    ## (Intercept)    1.8757558  0.0020766  903.271  < 2e-16 ***
-    ## jahr           0.0460972  0.0003160  145.876  < 2e-16 ***
-    ## cluster2      -0.2131429  0.0025177  -84.657  < 2e-16 ***
-    ## cluster3      -0.2877962  0.0023033 -124.950  < 2e-16 ***
-    ## cluster4      -0.2375593  0.0037534  -63.292  < 2e-16 ***
-    ## cluster5       0.0375663  0.0071404    5.261 1.43e-07 ***
-    ## cluster6      -0.3271078  0.0024221 -135.049  < 2e-16 ***
-    ## cluster7      -0.0604568  0.0023351  -25.890  < 2e-16 ***
-    ## cluster8      -0.2823459  0.0023575 -119.766  < 2e-16 ***
-    ## jahr:cluster2  0.0112994  0.0003781   29.882  < 2e-16 ***
-    ## jahr:cluster3  0.0149387  0.0003487   42.846  < 2e-16 ***
-    ## jahr:cluster4  0.0100258  0.0005529   18.133  < 2e-16 ***
-    ## jahr:cluster5 -0.0028486  0.0010776   -2.644   0.0082 ** 
-    ## jahr:cluster6  0.0417408  0.0003705  112.669  < 2e-16 ***
-    ## jahr:cluster7  0.0227450  0.0003560   63.897  < 2e-16 ***
-    ## jahr:cluster8  0.0214574  0.0003593   59.725  < 2e-16 ***
+    ##                 Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)    1.6375293  0.0029704  551.28   <2e-16 ***
+    ## jahr           0.0565914  0.0004322  130.94   <2e-16 ***
+    ## cluster2      -0.0316952  0.0030516  -10.39   <2e-16 ***
+    ## cluster3       0.2151485  0.0035126   61.25   <2e-16 ***
+    ## cluster4       0.0583646  0.0030776   18.96   <2e-16 ***
+    ## jahr:cluster2  0.0054266  0.0004446   12.21   <2e-16 ***
+    ## jahr:cluster3 -0.0105600  0.0005172  -20.42   <2e-16 ***
+    ## jahr:cluster4  0.0206779  0.0004496   45.99   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.259 on 1357277 degrees of freedom
+    ## Residual standard error: 0.2654 on 1357285 degrees of freedom
     ##   (521316 observations deleted due to missingness)
-    ## Multiple R-squared:  0.4317, Adjusted R-squared:  0.4317 
-    ## F-statistic: 6.873e+04 on 15 and 1357277 DF,  p-value: < 2.2e-16
+    ## Multiple R-squared:  0.4033, Adjusted R-squared:  0.4033 
+    ## F-statistic: 1.311e+05 on 7 and 1357285 DF,  p-value: < 2.2e-16
 
 Die Interpretation geschieht bei diesem Regressionsmodell ähnlich wie
 bereits bei dem Modell mit den Brennpunktgebieten, nur dass es nun statt
@@ -1299,33 +1290,25 @@ summary(lm_mietbelastung_cluster)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -4.7444 -0.3310 -0.0620  0.2782  3.4835 
+    ## -4.7834 -0.3392 -0.0676  0.2808  3.4416 
     ## 
     ## Coefficients:
     ##                 Estimate Std. Error  t value Pr(>|t|)    
-    ## (Intercept)   -1.9491017  0.0039927 -488.160  < 2e-16 ***
-    ## jahr           0.0440840  0.0006076   72.557  < 2e-16 ***
-    ## cluster2      -0.0544686  0.0048408  -11.252  < 2e-16 ***
-    ## cluster3       0.1275058  0.0044285   28.792  < 2e-16 ***
-    ## cluster4       0.1955950  0.0072167   27.103  < 2e-16 ***
-    ## cluster5      -0.0093499  0.0137289   -0.681    0.496    
-    ## cluster6       0.0259616  0.0046571    5.575 2.48e-08 ***
-    ## cluster7       0.2481329  0.0044897   55.267  < 2e-16 ***
-    ## cluster8      -0.0414025  0.0045328   -9.134  < 2e-16 ***
-    ## jahr:cluster2 -0.0085363  0.0007271  -11.741  < 2e-16 ***
-    ## jahr:cluster3 -0.0316678  0.0006704  -47.239  < 2e-16 ***
-    ## jahr:cluster4 -0.0410656  0.0010631  -38.630  < 2e-16 ***
-    ## jahr:cluster5 -0.0121587  0.0020718   -5.869 4.40e-09 ***
-    ## jahr:cluster6  0.0030891  0.0007123    4.337 1.45e-05 ***
-    ## jahr:cluster7  0.0065101  0.0006844    9.512  < 2e-16 ***
-    ## jahr:cluster8  0.0050429  0.0006908    7.300 2.87e-13 ***
+    ## (Intercept)   -1.7846038  0.0056655 -314.996  < 2e-16 ***
+    ## jahr           0.0094997  0.0008243   11.524  < 2e-16 ***
+    ## cluster2      -0.1213313  0.0058204  -20.846  < 2e-16 ***
+    ## cluster3      -0.1813756  0.0066997  -27.072  < 2e-16 ***
+    ## cluster4      -0.0248711  0.0058700   -4.237 2.27e-05 ***
+    ## jahr:cluster2  0.0183340  0.0008480   21.621  < 2e-16 ***
+    ## jahr:cluster3  0.0313419  0.0009865   31.770  < 2e-16 ***
+    ## jahr:cluster4  0.0409786  0.0008576   47.784  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.4981 on 1357277 degrees of freedom
+    ## Residual standard error: 0.5063 on 1357285 degrees of freedom
     ##   (521316 observations deleted due to missingness)
-    ## Multiple R-squared:  0.1182, Adjusted R-squared:  0.1182 
-    ## F-statistic: 1.213e+04 on 15 and 1357277 DF,  p-value: < 2.2e-16
+    ## Multiple R-squared:  0.08901,    Adjusted R-squared:  0.08901 
+    ## F-statistic: 1.895e+04 on 7 and 1357285 DF,  p-value: < 2.2e-16
 
 ``` r
 # Stargazer Tabelle
@@ -1341,7 +1324,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Tue, Jan 30, 2024 - 19:48:15
+    ## % Date and time: Wed, Jan 31, 2024 - 11:34:07
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1353,42 +1336,26 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
     ## \\[-1.8ex] & log Kaltmiete (€/m\textsuperscript{2}) & log Mietbelastung (\%) \\ 
     ## \\[-1.8ex] & (1) & (2)\\ 
     ## \hline \\[-1.8ex] 
-    ##  Jahr & 0.046$^{***}$ & 0.044$^{***}$ \\ 
-    ##   & (0.0003) & (0.001) \\ 
-    ##   Cluster2 & $-$0.213$^{***}$ & $-$0.054$^{***}$ \\ 
-    ##   & (0.003) & (0.005) \\ 
-    ##   Cluster3 & $-$0.288$^{***}$ & 0.128$^{***}$ \\ 
-    ##   & (0.002) & (0.004) \\ 
-    ##   Cluster4 & $-$0.238$^{***}$ & 0.196$^{***}$ \\ 
+    ##  Jahr & 0.057$^{***}$ & 0.009$^{***}$ \\ 
+    ##   & (0.0004) & (0.001) \\ 
+    ##   Cluster2 & $-$0.032$^{***}$ & $-$0.121$^{***}$ \\ 
+    ##   & (0.003) & (0.006) \\ 
+    ##   Cluster3 & 0.215$^{***}$ & $-$0.181$^{***}$ \\ 
     ##   & (0.004) & (0.007) \\ 
-    ##   Jahr*Cluster2 & 0.038$^{***}$ & $-$0.009 \\ 
-    ##   & (0.007) & (0.014) \\ 
-    ##   Jahr*Cluster3 & $-$0.327$^{***}$ & 0.026$^{***}$ \\ 
-    ##   & (0.002) & (0.005) \\ 
-    ##   Jahr*Cluster4 & $-$0.060$^{***}$ & 0.248$^{***}$ \\ 
-    ##   & (0.002) & (0.004) \\ 
-    ##   Konstante & $-$0.282$^{***}$ & $-$0.041$^{***}$ \\ 
-    ##   & (0.002) & (0.005) \\ 
-    ##   jahr:cluster2 & 0.011$^{***}$ & $-$0.009$^{***}$ \\ 
+    ##   Cluster4 & 0.058$^{***}$ & $-$0.025$^{***}$ \\ 
+    ##   & (0.003) & (0.006) \\ 
+    ##   Jahr*Cluster2 & 0.005$^{***}$ & 0.018$^{***}$ \\ 
     ##   & (0.0004) & (0.001) \\ 
-    ##   jahr:cluster3 & 0.015$^{***}$ & $-$0.032$^{***}$ \\ 
-    ##   & (0.0003) & (0.001) \\ 
-    ##   jahr:cluster4 & 0.010$^{***}$ & $-$0.041$^{***}$ \\ 
+    ##   Jahr*Cluster3 & $-$0.011$^{***}$ & 0.031$^{***}$ \\ 
     ##   & (0.001) & (0.001) \\ 
-    ##   jahr:cluster5 & $-$0.003$^{***}$ & $-$0.012$^{***}$ \\ 
-    ##   & (0.001) & (0.002) \\ 
-    ##   jahr:cluster6 & 0.042$^{***}$ & 0.003$^{***}$ \\ 
+    ##   Jahr*Cluster4 & 0.021$^{***}$ & 0.041$^{***}$ \\ 
     ##   & (0.0004) & (0.001) \\ 
-    ##   jahr:cluster7 & 0.023$^{***}$ & 0.007$^{***}$ \\ 
-    ##   & (0.0004) & (0.001) \\ 
-    ##   jahr:cluster8 & 0.021$^{***}$ & 0.005$^{***}$ \\ 
-    ##   & (0.0004) & (0.001) \\ 
-    ##   Constant & 1.876$^{***}$ & $-$1.949$^{***}$ \\ 
-    ##   & (0.002) & (0.004) \\ 
+    ##   Konstante & 1.638$^{***}$ & $-$1.785$^{***}$ \\ 
+    ##   & (0.003) & (0.006) \\ 
     ##  \hline \\[-1.8ex] 
     ## Observations & 1,357,293 & 1,357,293 \\ 
-    ## R$^{2}$ & 0.432 & 0.118 \\ 
-    ## Adjusted R$^{2}$ & 0.432 & 0.118 \\ 
+    ## R$^{2}$ & 0.403 & 0.089 \\ 
+    ## Adjusted R$^{2}$ & 0.403 & 0.089 \\ 
     ## \hline 
     ## \hline \\[-1.8ex] 
     ## \textit{Anmerkung:} & \multicolumn{2}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
@@ -1583,7 +1550,7 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Tue, Jan 30, 2024 - 19:48:18
+    ## % Date and time: Wed, Jan 31, 2024 - 11:34:10
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 

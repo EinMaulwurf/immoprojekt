@@ -418,11 +418,8 @@ k-means clustering mit den Variablen
 - anteil_efh
 - anteil_60_plus
 
-Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
-
-Zuerst clustering nur für ein Jahr, dann verwenden wir die Cluster Center nochmal für alle Jahre. Somit sollten die Cluster über die Zeit stabil bleiben.
-
-```{r}
+Schauen wieviele Cluster wir benutzen sollten.
+```{r fig.width=5, fig.height=2}
 data_clustering_2015 <- data_social %>%
   filter(jahr == 2015) %>%
   drop_na() %>%
@@ -430,16 +427,9 @@ data_clustering_2015 <- data_social %>%
   as.matrix() %>%
   scale()
 
-set.seed(1)
-kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
-```
 
-Schauen wieviele Cluster wir benutzen sollten.
-```{r fig.width=5, fig.height=2}
 set.seed(1)
-
 max_cluster <- 8
-
 wss_sum <- numeric(max_cluster)
 
 for(n_cluster in 1:max_cluster){
@@ -457,6 +447,17 @@ tibble(n_cluster = 1:max_cluster,
 
 #ggsave("./plots/plot_cluster_elbow.png")
 ```
+
+Es werden 4 Cluster verwendet. *Hier Begründung einfügen*
+
+Zuerst clustering nur für ein Jahr, dann verwenden wir die Cluster Center nochmal für alle Jahre. Somit sollten die Cluster über die Zeit stabil bleiben.
+
+```{r}
+set.seed(1)
+kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
+```
+
+
 
 
 Und jetzt Clustern für alle Jahre mit dem Output von `kmeans_result_2015`
