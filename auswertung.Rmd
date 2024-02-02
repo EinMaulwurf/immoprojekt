@@ -481,11 +481,7 @@ set.seed(1)
 kmeans_result_2015 <- kmeans(data_clustering_2015, centers = 4)
 ```
 
-
-
-
 Und jetzt Clustern für alle Jahre mit dem Output von `kmeans_result_2015`
-
 ```{r}
 # Split data by year
 data_clustering_year <- data_social %>%
@@ -513,7 +509,6 @@ kmeans_result_2019 <- data_clustering_year[[4]] %>% as.matrix() %>% scale() %>%
 ```
 
 Und jetzt plotten wirs mal für das Jahr 2015
-
 ```{r}
 data_social_sf %>%
   filter(jahr == 2015) %>%
@@ -821,7 +816,7 @@ facet_labeller <- function(variable,value){
 
 rbind(new_data_miete_brennpunktFALSE, new_data_miete_brennpunktTRUE) %>%
   mutate(jahr = jahr + 2007,
-         jahr = lubridate::ymd(paste(jahr, 06, 01, sep = "-"))) %>%
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
   pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
   mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung"))) %>%
   ggplot(aes(x = jahr, y = value, color = ist_brennpunkt, group = ist_brennpunkt))+
