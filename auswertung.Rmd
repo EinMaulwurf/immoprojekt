@@ -558,10 +558,10 @@ Betrachten wir beispielsweise Cluster 3:
 
 Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir eine zusammenfassende Beschreibung für die 4 Gebiete erstellt:
 
-- Cluster 1: Multikulturelle Ballungsräume
-- Cluster 2: Stabile Wohngebiete
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
 - Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Sozial herausgeforderte Viertel
+- Cluster 4: Multikulturelle Ballungsräume
 
 ```{r, fig.width=7.5, fig.height=2}
 plot1 <- data_social_sf %>%
@@ -890,6 +890,15 @@ lm_miete_cluster <- data_social %>%
 summary(lm_miete_cluster)
 ```
 
+```{r}
+# Test
+
+test <- data.frame(jahr = 0,
+           cluster = factor(c(1, 2, 3, 4)))
+
+predict(lm_miete_cluster, test) %>% exp()
+```
+
 
 Die Interpretation geschieht bei diesem Regressionsmodell ähnlich wie bereits bei dem Modell mit den Brennpunktgebieten, nur dass es nun statt einer binären Variable eine kategorische Variable Cluster mit vier Leveln gibt. Betrachten wir den Regressions-Output, fällt auf, dass dort Cluster1 nicht auftaucht. Das ist also die Baseline.
 Im Jahr 2007 startet Cluster1 also mit einer Kaltmiete von $\exp(1.63) = 5.14$ €/m\textsuperscript{2} und steigt pro Jahr um $\exp(0.056)-1=5.82\%$. Cluster2 hingegen startet mit einer Kaltmiete um $\exp(0.031) = 0.97$ €/m\textsuperscript{2} niedriger als Cluster1. Die Entwicklung in Cluster2 ist hingegen um $\exp(0.0054266)-1 = 0.54\%$ pro Jahr höher.
@@ -924,13 +933,6 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
 
 **ACHTUNG:** Wir müssen je das oberste und unterste 1% der Beobachtungen rauswerfen, da diese zu einer Verletzung der Normalverteilungsannahme führen. Das führt zu leicht unterschiedlichen Werten für die Betas.
-
-Zur Erinnerung, die Cluster haben wir wie folgt beschrieben:
-
-- Cluster 1: Stabile Wohngebiete
-- Cluster 2: Sozial herausgeforderte Viertel
-- Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Multikulturelle Ballungsräume
 
 Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem "kleinen" Modell, schon beachtlich.
 
