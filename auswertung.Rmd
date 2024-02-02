@@ -760,77 +760,6 @@ lm_miete_brennpunkt <- data_social %>%
 summary(lm_miete_brennpunkt)
 ```
 
-```{r fig.width=5, fig.height=3}
-# Plot
-
-new_data_brennpunktFALSE <- data.frame(jahr = (2007:2020)-2007,
-           ist_brennpunkt = FALSE) %>%
-   mutate(mietekalt_m2_log = predict(lm_miete_brennpunkt, .),
-          mietekalt_m2 = exp(mietekalt_m2_log))
-new_data_brennpunktFALSE
-
-new_data_brennpunktTRUE <- data.frame(jahr = (2007:2020)-2007,
-           ist_brennpunkt = TRUE) %>%
-   mutate(mietekalt_m2_log = predict(lm_miete_brennpunkt, .),
-          mietekalt_m2 = exp(mietekalt_m2_log))
-new_data_brennpunktTRUE
-
-data.frame(jahr = new_data_brennpunktFALSE$jahr + 2007,
-           nichtBrennpunktgebiet = new_data_brennpunktFALSE$mietekalt_m2,
-           Brennpunktgebiet = new_data_brennpunktTRUE$mietekalt_m2) %>%
-  pivot_longer(cols = -jahr, names_to = "ist_brennpunkt", values_to = "miete_m2") %>%
-  ggplot(aes(x = jahr, y = miete_m2, color = ist_brennpunkt))+
-  geom_line()+
-  scale_x_continuous(breaks = seq(from = 2007, to = 2020, by = 2))+
-  scale_color_manual(labels = c("Brennpunkt", "nicht-Brennpunkt"), values = c("blue", "red")) +
-  theme_bw()+
-  theme(legend.position = c(0.22, 0.8))+
-  labs(x = "Jahr", y = "Kaltmiete pro m²",
-       color = element_blank())
-
-ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 3)
-```
-
-
-```{r}
-# Test
-data_social %>%
-  filter(jahr == 2015) %>%
-  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
-  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
-  select(r1_id, ist_brennpunkt) %>%
-  right_join(data_rent, by = "r1_id") %>%
-  filter(!is.na(ist_brennpunkt)) %>%
-  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
-  filter(!is.na(mietekalt_m2)) %>%
-  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
-  mutate(jahr = jahr - 2007) %>%
-  filter(ist_brennpunkt) %>%
-  lm(log(mietekalt_m2) ~ jahr, data = .)
-
-data_social %>%
-  filter(jahr == 2015) %>%
-  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
-  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
-  select(r1_id, ist_brennpunkt) %>%
-  right_join(data_rent, by = "r1_id") %>%
-  filter(!is.na(ist_brennpunkt)) %>%
-  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
-  filter(!is.na(mietekalt_m2)) %>%
-  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
-  mutate(jahr = jahr - 2007) %>%
-  filter(!ist_brennpunkt) %>%
-  lm(log(mietekalt_m2) ~ jahr, data = .)
-```
-
-```{r}
-test_data <- data.frame(jahr = c(0,0,1,1),
-           ist_brennpunkt = c(TRUE, FALSE, TRUE, FALSE))
-
-predict(lm_miete_brennpunkt, test_data) %>% exp()
-```
-
-
 Interpretation: Für Nicht-Brennpunktgebiete liegt log Kaltmiete pro m2 liegt in Jahr 2007 bei $\exp(1.733) = 5.66$ €/m2 und steigt pro Jahr um $\exp(5.736\cdot 10^{2})-1 = 5.9\%$. Handelt es sich um ein Brennpunktgebiet, so liegt die Miete im Jahr 2007 um $\exp(1.012\cdot 10^{-1}) = 0.90$ €/m2 niedriger, also bei $5.66 - 0.90 = 4.76$ €/m2. Von diesem niedrigeren Niveau steigt die Miete dann um $\exp(8.178 \cdot 10^{-3}) = 0.8\%$ pro Jahr stärker. Alle diese Effekte sind stark statistisch signifikant mit p-Werten nahe Null.
 
 ```{r}
@@ -852,23 +781,6 @@ lm_mietbelastung_brennpunkt <- data_social %>%
 summary(lm_mietbelastung_brennpunkt)
 ```
 
-```{r}
-data_social %>%
-  filter(jahr == 2015) %>%
-  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
-  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
-  select(r1_id, ist_brennpunkt, kaufkraft_pro_haushalt) %>%
-  right_join(data_rent, by = "r1_id") %>%
-  filter(!is.na(ist_brennpunkt)) %>%
-  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
-  filter(!is.na(mietekalt_m2)) %>%
-  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
-  filter(jahr == 2007) %>%
-  group_by(ist_brennpunkt) %>%
-  summarise(mean(mietbelastung),
-            mean(mietekalt_m2))
-```
-
 
 Interpretation: Für Nicht-Brennpunktgebiete liegt die Mietbelastung im Jahr 2007 bei $14.5\%$ und steigt von dort pro Jahr um $1.2\text{pp}$. Handelt es sich um ein Brennpunktgebiet, so liegt die Mietbelastung 2007 um $1.9\%$ niedriger bei $14.5\% - 1.9\% = 12.6\%$. Von dort steigt diese jedoch um $0.2\%$ stärker an, also um insgesamt um knapp $1.5\text{pp}$. Wieder sind alle Effekte statistisch signifikant.
 
@@ -884,6 +796,45 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
           notes.label = "\\textit{Anmerkung:}")
 ```
 
+Plot des Regressionsmodells
+```{r fig.width=5, fig.height=2.5, warning=FALSE}
+new_data_miete_brennpunktFALSE <- data.frame(jahr = (2007:2020)-2007,
+           ist_brennpunkt = FALSE) %>%
+   mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
+          mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)))
+#new_data_miete_brennpunktFALSE
+
+new_data_miete_brennpunktTRUE <- data.frame(jahr = (2007:2020)-2007,
+           ist_brennpunkt = TRUE) %>%
+   mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
+          mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)))
+#new_data_miete_brennpunktTRUE
+
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+rbind(new_data_miete_brennpunktFALSE, new_data_miete_brennpunktTRUE) %>%
+  mutate(jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 06, 01, sep = "-"))) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  ggplot(aes(x = jahr, y = value, color = ist_brennpunkt, group = ist_brennpunkt))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  scale_color_manual(labels = c("nicht-Brennpunkt", "Brennpunkt"), values = c("blue", "red")) +
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "Jahr", y = element_blank(), color = element_blank())
+
+#ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 2.5)
+```
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
 ```{r warning=FALSE, fig.width=5, fig.height=2}
