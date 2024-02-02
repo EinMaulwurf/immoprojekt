@@ -48,8 +48,8 @@ Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
 data_rent <- vroom("./daten/data_rent.csv")
 data_social <- vroom("./daten/data_social.csv")
 
-inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg")
-bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
   st_transform("EPSG:3035")
 
 data_social_sf <- data_social %>%
@@ -67,6 +67,7 @@ baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
 
 Überblick über die beiden Datensätze mit Anzahl an Beobachtungen, Mittelwert, Median, Quartilen und mehr.
 ```{r}
+# Data Social
 data_social %>% select(-jahr, -r1_id) %>%
   mutate(kaufkraft_pro_haushalt_1000 = kaufkraft_pro_haushalt / 1000,
          anzahl_haushalte_1000 = anzahl_haushalte / 1000) %>%
@@ -93,6 +94,8 @@ data_social %>% select(-jahr, -r1_id) %>%
   ) %>%
   cat()
 
+# Data Rent
+# Allgemein
 data_rent %>% select(-jahr, -r1_id) %>%
   pivot_longer(cols = everything()) %>%
   group_by(name) %>%
@@ -113,6 +116,27 @@ data_rent %>% select(-jahr, -r1_id) %>%
     midrule = "\\hline",
     bottomrule = "\\hline \\hline",
     linesep = "",
+  ) %>%
+  cat()
+
+# Nach Jahren
+data_rent %>% select(-r1_id) %>%
+  group_by(jahr) %>%
+  summarise(n = n(),
+            mietekalt_mean = mean(mietekalt),
+            mietekalt_median = median(mietekalt),
+            wohnflaeche_mean = mean(wohnflaeche),
+            wohnflaeche_median = median(wohnflaeche),
+            mietekalt_m2_mean = mean(mietekalt_m2),
+            mietekalt_m2_median = median(mietekalt_m2)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "", "\\addlinespace"),
   ) %>%
   cat()
 ```
@@ -736,6 +760,77 @@ lm_miete_brennpunkt <- data_social %>%
 summary(lm_miete_brennpunkt)
 ```
 
+```{r fig.width=5, fig.height=3}
+# Plot
+
+new_data_brennpunktFALSE <- data.frame(jahr = (2007:2020)-2007,
+           ist_brennpunkt = FALSE) %>%
+   mutate(mietekalt_m2_log = predict(lm_miete_brennpunkt, .),
+          mietekalt_m2 = exp(mietekalt_m2_log))
+new_data_brennpunktFALSE
+
+new_data_brennpunktTRUE <- data.frame(jahr = (2007:2020)-2007,
+           ist_brennpunkt = TRUE) %>%
+   mutate(mietekalt_m2_log = predict(lm_miete_brennpunkt, .),
+          mietekalt_m2 = exp(mietekalt_m2_log))
+new_data_brennpunktTRUE
+
+data.frame(jahr = new_data_brennpunktFALSE$jahr + 2007,
+           nichtBrennpunktgebiet = new_data_brennpunktFALSE$mietekalt_m2,
+           Brennpunktgebiet = new_data_brennpunktTRUE$mietekalt_m2) %>%
+  pivot_longer(cols = -jahr, names_to = "ist_brennpunkt", values_to = "miete_m2") %>%
+  ggplot(aes(x = jahr, y = miete_m2, color = ist_brennpunkt))+
+  geom_line()+
+  scale_x_continuous(breaks = seq(from = 2007, to = 2020, by = 2))+
+  scale_color_manual(labels = c("Brennpunkt", "nicht-Brennpunkt"), values = c("blue", "red")) +
+  theme_bw()+
+  theme(legend.position = c(0.22, 0.8))+
+  labs(x = "Jahr", y = "Kaltmiete pro m²",
+       color = element_blank())
+
+ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 3)
+```
+
+
+```{r}
+# Test
+data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  filter(ist_brennpunkt) %>%
+  lm(log(mietekalt_m2) ~ jahr, data = .)
+
+data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  filter(!ist_brennpunkt) %>%
+  lm(log(mietekalt_m2) ~ jahr, data = .)
+```
+
+```{r}
+test_data <- data.frame(jahr = c(0,0,1,1),
+           ist_brennpunkt = c(TRUE, FALSE, TRUE, FALSE))
+
+predict(lm_miete_brennpunkt, test_data) %>% exp()
+```
+
+
 Interpretation: Für Nicht-Brennpunktgebiete liegt log Kaltmiete pro m2 liegt in Jahr 2007 bei $\exp(1.733) = 5.66$ €/m2 und steigt pro Jahr um $\exp(5.736\cdot 10^{2})-1 = 5.9\%$. Handelt es sich um ein Brennpunktgebiet, so liegt die Miete im Jahr 2007 um $\exp(1.012\cdot 10^{-1}) = 0.90$ €/m2 niedriger, also bei $5.66 - 0.90 = 4.76$ €/m2. Von diesem niedrigeren Niveau steigt die Miete dann um $\exp(8.178 \cdot 10^{-3}) = 0.8\%$ pro Jahr stärker. Alle diese Effekte sind stark statistisch signifikant mit p-Werten nahe Null.
 
 ```{r}
@@ -755,6 +850,23 @@ lm_mietbelastung_brennpunkt <- data_social %>%
   lm(log(mietbelastung) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, data = .)
 
 summary(lm_mietbelastung_brennpunkt)
+```
+
+```{r}
+data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt, kaufkraft_pro_haushalt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  filter(jahr == 2007) %>%
+  group_by(ist_brennpunkt) %>%
+  summarise(mean(mietbelastung),
+            mean(mietekalt_m2))
 ```
 
 
