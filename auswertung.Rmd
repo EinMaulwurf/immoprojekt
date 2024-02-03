@@ -680,8 +680,9 @@ NEU INTERPRETIEREN
 
 stargazer(lm_miete_jahr, lm_mietbelastung_jahr, 
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -784,8 +785,9 @@ Interpretation: Für Nicht-Brennpunktgebiete liegt die Mietbelastung im Jahr 200
 
 stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt, 
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr", "Brennpunkt", "Jahr*Brennpunkt"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -914,8 +916,9 @@ summary(lm_mietbelastung_cluster)
 
 stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -1050,8 +1053,9 @@ summary(lm_mietbelastung_LQ)
 
 stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "LQ Arbeitslose", "LQ Auslaenderanteil", "Konstante"),
-          omit.stat = c("ser", "f"), single.row = FALSE, 
+          covariate.labels = c("Konstante", "Jahr", "LQ Arbeitslose", "LQ Auslaenderanteil"),
+          omit.stat = c("ser", "f"), single.row = FALSE,
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
