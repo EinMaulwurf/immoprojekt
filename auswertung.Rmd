@@ -793,18 +793,6 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
 Plot des Regressionsmodells
 ```{r fig.width=5, fig.height=2.5, warning=FALSE}
-new_data_miete_brennpunktFALSE <- data.frame(jahr = (2007:2020)-2007,
-           ist_brennpunkt = FALSE) %>%
-   mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
-          mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)))
-#new_data_miete_brennpunktFALSE
-
-new_data_miete_brennpunktTRUE <- data.frame(jahr = (2007:2020)-2007,
-           ist_brennpunkt = TRUE) %>%
-   mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
-          mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)))
-#new_data_miete_brennpunktTRUE
-
 facet_names <- list(
   'mietekalt_m2'="Miete (€/m²)",
   'mietbelastung'="Mietbelastung (%)"
@@ -814,7 +802,10 @@ facet_labeller <- function(variable,value){
   return(facet_names[value])
 }
 
-rbind(new_data_miete_brennpunktFALSE, new_data_miete_brennpunktTRUE) %>%
+expand.grid(jahr = (2007:2020) - 2007,
+            ist_brennpunkt = c(TRUE, FALSE)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)) * 100) %>%
   mutate(jahr = jahr + 2007,
          jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
   pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
@@ -929,6 +920,40 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
 
+```
+
+Plot des Regressionsmodells
+```{r fig.width=5, fig.height=2.5, warning=FALSE}
+
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+
+expand.grid(jahr = (2007:2020) - 2007,
+            cluster = factor(1:4)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_cluster, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_cluster, .)) * 100) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung")),
+         jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  ggplot(aes(x = jahr, y = value, color = cluster))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  scale_color_brewer(palette = "Paired")+
+  #scale_color_manual(values = c("blue", "red", "darkgreen", "black")) +
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "Jahr", y = element_blank(), color = "Cluster")
+
+#ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
 ```
 
 
