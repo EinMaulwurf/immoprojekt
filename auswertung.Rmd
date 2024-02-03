@@ -264,8 +264,9 @@ plot1 <- data_rent %>%
   geom_boxplot(outlier.shape = NA)+
   coord_cartesian(ylim = c(0, 30))+
   scale_x_continuous(breaks = 2010:2020, labels = 10:20)+
+  scale_y_continuous(breaks = seq(from = 0, to = 30, by = 5))+
   theme_bw()+
-  labs(x = "Jahr", y = "Kaltmiete pro m²")
+  labs(x = "Jahr", y = "Kaltmiete (€/m²)")
 
 plot2 <- data_rent %>%
   filter(jahr == 2010) %>%
@@ -276,10 +277,10 @@ plot2 <- data_rent %>%
   geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete 2010", y = "Dichte in %")
+  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
@@ -290,10 +291,10 @@ plot3 <- data_rent %>%
   geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete 2020", y = "Dichte in %")
+  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
