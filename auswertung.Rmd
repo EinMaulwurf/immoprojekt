@@ -691,35 +691,36 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür erstellen wir für beide Regressionsmodelle jeweils einen Plot, bei dem die Residuen den gefitteten, also durch das Modell vorhergesagten Werten gegenübergestellt werden.
-
 ```{r warning=FALSE, fig.width=5, fig.height=2}
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_jahr),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_jahr),
        resids = resid(lm_miete_jahr)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_jahr),
-       resids = resid(lm_mietbelastung_jahr)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_jahr),
+       resids = resid(lm_mietbelastung_jahr))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 
 #ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
 ```
@@ -827,33 +828,35 @@ expand.grid(jahr = (2007:2020) - 2007,
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
 ```{r warning=FALSE, fig.width=5, fig.height=2}
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_brennpunkt),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_brennpunkt),
        resids = resid(lm_miete_brennpunkt)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_brennpunkt),
-       resids = resid(lm_miete_brennpunkt)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_brennpunkt),
+       resids = resid(lm_mietbelastung_brennpunkt))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 
 #ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
 ```
@@ -882,15 +885,6 @@ lm_miete_cluster <- data_social %>%
   lm(log(mietekalt_m2) ~ jahr + cluster + cluster:jahr, data = .)
 
 summary(lm_miete_cluster)
-```
-
-```{r}
-# Test
-
-test <- data.frame(jahr = 0,
-           cluster = factor(c(1, 2, 3, 4)))
-
-predict(lm_miete_cluster, test) %>% exp()
 ```
 
 
@@ -967,33 +961,35 @@ Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem "kleinen" Mo
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
 ```{r warning=FALSE, fig.width=5, fig.height=2}
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_cluster),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_cluster),
        resids = resid(lm_miete_cluster)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_cluster),
-       resids = resid(lm_mietbelastung_cluster)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_cluster),
+       resids = resid(lm_mietbelastung_cluster))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 
 #ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
 ```
@@ -1104,38 +1100,6 @@ expand.grid(jahr = (2007:2020) - 2007,
 
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
-```{r warning=FALSE, fig.width=5, fig.height=2}
-set.seed(1)
-
-plot1 <- tibble(fitted = fitted(lm_mietekalt_LQ),
-       resids = resid(lm_mietekalt_LQ)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_LQ),
-       resids = resid(lm_mietbelastung_LQ)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids))+
-  geom_point(alpha = .05, size = .2)+
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
-
-#ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
-```
-
 ```{r warning=FALSE, fig.width=5, fig.height=2}
 facet_names <- list(
   'mietekalt_m2'="Miete",
