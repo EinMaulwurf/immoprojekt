@@ -1018,7 +1018,7 @@ lm_mietekalt_LQ <- data_rent %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
          mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+  lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender + LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
 
 summary(lm_mietekalt_LQ)
 ```
@@ -1044,7 +1044,7 @@ lm_mietbelastung_LQ <- data_rent %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+  lm(log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender + LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
 
 summary(lm_mietbelastung_LQ)
 ```
@@ -1054,12 +1054,52 @@ summary(lm_mietbelastung_LQ)
 
 stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Konstante", "Jahr", "LQ Arbeitslose", "LQ Auslaenderanteil"),
+          covariate.labels = c("Konstante", "Jahr", "LQ Arbeitslose", "LQ Ausländer", "LQ Arbeitslose*Jahr", "LQ Ausländer*Jahr"),
           omit.stat = c("ser", "f"), single.row = FALSE,
           intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
+```
+
+Plot Regressionsmodelle
+```{r warning=FALSE, fig.width=5, fig.height=2.5}
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+
+expand.grid(jahr = (2007:2020) - 2007,
+            LQ_arbeitslose = seq(from = 0, to = 2, by = 0.1) %>% round(1),
+            LQ_auslaender = seq(from = 0, to = 2, by = 0.1) %>% round(1)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_mietekalt_LQ, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_LQ, .)) * 100) %>%
+  filter(LQ_arbeitslose %in% c(0.2, 1.2)) %>%
+  filter(LQ_auslaender %in% c(0.2, 1.2)) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung")),
+         jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  ggplot(aes(x = jahr, y = value, color = as_factor(LQ_auslaender), linetype = as_factor(LQ_arbeitslose)))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c("blue", "red", "green", "black")) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash"))+
+  theme_bw()+
+  theme(legend.position = "top",
+        #legend.box = "vertical",
+        #legend.margin = margin(t = 2, b = -5, l = 0, r = 0)
+        )+
+  labs(x = "Jahr", y = element_blank(), color = "LQ-Ausländer", linetype = "LQ-Arbeitslose")
+
+#ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
 ```
 
 
@@ -1096,6 +1136,41 @@ ggarrange(plot1, plot2, nrow = 1)
 #ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
 ```
 
+```{r warning=FALSE, fig.width=5, fig.height=2}
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
+set.seed(1)
+
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_mietekalt_LQ),
+       resids = resid(lm_mietekalt_LQ)) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_LQ),
+       resids = resid(lm_mietbelastung_LQ))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
+  ggplot(aes(x = fitted, y = resids))+
+  geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
+  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
+  theme_bw()+
+  labs(x = "Fitted", y = "Residuals")
+
+#ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
+```
+
+
 # Ideen, Testen & Ausprobieren
 
 ```{r}
@@ -1103,3 +1178,8 @@ ggarrange(plot1, plot2, nrow = 1)
 ```
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
+
+```{r}
+rnorm(1)
+```
+
