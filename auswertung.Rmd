@@ -945,8 +945,8 @@ expand.grid(jahr = (2007:2020) - 2007,
   geom_line()+
   facet_wrap(~name, scales = "free", labeller = facet_labeller)+
   scale_x_date(date_breaks = "2 years", date_labels = "%y")+
-  scale_color_brewer(palette = "Paired")+
-  #scale_color_manual(values = c("blue", "red", "darkgreen", "black")) +
+  #scale_color_brewer(palette = "Paired")+
+  #scale_color_manual(values = c("blue", "red", "orange", "purple", "cyan", "magenta")) +
   theme_bw()+
   theme(legend.position = "top")+
   labs(x = "Jahr", y = element_blank(), color = "Cluster")
@@ -1095,7 +1095,7 @@ expand.grid(jahr = (2007:2020) - 2007,
         )+
   labs(x = "Jahr", y = element_blank(), color = "LQ-Ausländer", linetype = "LQ-Arbeitslose")
 
-#ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
+#ggsave("./plots/plot_regression_lq_modell.png", width = 5, height = 2.5)
 ```
 
 
