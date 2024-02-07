@@ -46,33 +46,10 @@ abgespeichert.
 data_rent <- vroom("./daten/data_rent.csv")
 data_social <- vroom("./daten/data_social.csv")
 
-inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg")
-```
-
-    ## Reading layer `inspire_grid_berlin' from data source 
-    ##   `/Users/sebastiangeis/Library/CloudStorage/OneDrive-Persönlich/Dokumente/01_Uni/24_Projekt Immobilienmarkt/immoprojekt/daten/inspire_grid_berlin.gpkg' 
-    ##   using driver `GPKG'
-    ## Simple feature collection with 1016 features and 17 fields
-    ## Geometry type: POLYGON
-    ## Dimension:     XY
-    ## Bounding box:  xmin: 4531000 ymin: 3253000 xmax: 4577000 ymax: 3291000
-    ## Projected CRS: ETRS89-extended / LAEA Europe
-
-``` r
-bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp") %>%
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
   st_transform("EPSG:3035")
-```
 
-    ## Reading layer `bezirksgrenzen' from data source 
-    ##   `/Users/sebastiangeis/Library/CloudStorage/OneDrive-Persönlich/Dokumente/01_Uni/24_Projekt Immobilienmarkt/immoprojekt/daten/bezirksgrenzen_berlin/bezirksgrenzen.shp' 
-    ##   using driver `ESRI Shapefile'
-    ## Simple feature collection with 12 features and 6 fields
-    ## Geometry type: MULTIPOLYGON
-    ## Dimension:     XY
-    ## Bounding box:  xmin: 13.08835 ymin: 52.33825 xmax: 13.76116 ymax: 52.67551
-    ## Geodetic CRS:  WGS 84
-
-``` r
 data_social_sf <- data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
   st_as_sf()
@@ -90,6 +67,7 @@ baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
 Mittelwert, Median, Quartilen und mehr.
 
 ``` r
+# Data Social
 data_social %>% select(-jahr, -r1_id) %>%
   mutate(kaufkraft_pro_haushalt_1000 = kaufkraft_pro_haushalt / 1000,
          anzahl_haushalte_1000 = anzahl_haushalte / 1000) %>%
@@ -137,6 +115,8 @@ data_social %>% select(-jahr, -r1_id) %>%
     ## \end{tabular}
 
 ``` r
+# Data Rent
+# Allgemein
 data_rent %>% select(-jahr, -r1_id) %>%
   pivot_longer(cols = everything()) %>%
   group_by(name) %>%
@@ -169,6 +149,54 @@ data_rent %>% select(-jahr, -r1_id) %>%
     ## mietekalt & 1917043 & 627.08 & 516.80 & 0.01 & 346.00 & 467.86 & 706.54 & 15000\\
     ## mietekalt\_m2 & 1917043 & 8.50 & 115.04 & 0.00 & 5.59 & 7.00 & 9.45 & 58000\\
     ## wohnflaeche & 1917043 & 75.81 & 35.59 & 0.01 & 54.99 & 68.89 & 88.00 & 1000\\
+    ## \hline \hline
+    ## \end{tabular}
+
+``` r
+# Nach Jahren
+data_rent %>% select(-r1_id) %>%
+  group_by(jahr) %>%
+  summarise(n = n(),
+            mietekalt_mean = mean(mietekalt),
+            mietekalt_median = median(mietekalt),
+            wohnflaeche_mean = mean(wohnflaeche),
+            wohnflaeche_median = median(wohnflaeche),
+            mietekalt_m2_mean = mean(mietekalt_m2),
+            mietekalt_m2_median = median(mietekalt_m2)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+```
+
+    ## 
+    ## \begin{tabular}[t]{rrrrrrrr}
+    ## \hline \hline
+    ## jahr & n & mietekalt\_mean & mietekalt\_median & wohnflaeche\_mean & wohnflaeche\_median & mietekalt\_m2\_mean & mietekalt\_m2\_median\\
+    ## \hline
+    ## 2007 & 216882 & 439.53 & 362.00 & 74.61 & 69.19 & 6.81 & 5.49\\
+    ## 2008 & 226760 & 452.74 & 368.56 & 73.89 & 68.67 & 6.22 & 5.60\\
+    ## 2009 & 211381 & 471.83 & 382.00 & 74.54 & 69.00 & 6.62 & 5.80\\
+    ## 2010 & 182552 & 520.49 & 401.38 & 76.37 & 69.30 & 6.77 & 6.11\\
+    ## 2011 & 150706 & 562.42 & 432.73 & 76.56 & 69.00 & 7.86 & 6.58\\
+    ## \addlinespace
+    ## 2012 & 139518 & 624.59 & 475.00 & 77.71 & 70.00 & 8.02 & 7.30\\
+    ## 2013 & 135140 & 700.08 & 525.00 & 79.64 & 70.50 & 8.56 & 8.00\\
+    ## 2014 & 136700 & 736.57 & 564.00 & 79.32 & 70.51 & 9.58 & 8.50\\
+    ## 2015 & 110705 & 758.32 & 595.00 & 79.07 & 70.00 & 9.52 & 8.91\\
+    ## 2016 & 90353 & 769.64 & 599.00 & 77.03 & 69.00 & 9.83 & 9.10\\
+    ## \addlinespace
+    ## 2017 & 80657 & 847.20 & 662.00 & 76.34 & 67.88 & 10.88 & 10.18\\
+    ## 2018 & 68290 & 874.30 & 700.08 & 73.55 & 66.20 & 11.93 & 11.00\\
+    ## 2019 & 68548 & 918.83 & 729.23 & 71.75 & 65.10 & 13.42 & 11.64\\
+    ## 2020 & 49753 & 975.44 & 780.00 & 70.88 & 64.03 & 14.47 & 12.66\\
+    ## 2021 & 49098 & 1001.15 & 775.96 & 68.47 & 61.57 & 14.76 & 13.33\\
     ## \hline \hline
     ## \end{tabular}
 
@@ -376,8 +404,9 @@ plot1 <- data_rent %>%
   geom_boxplot(outlier.shape = NA)+
   coord_cartesian(ylim = c(0, 30))+
   scale_x_continuous(breaks = 2010:2020, labels = 10:20)+
+  scale_y_continuous(breaks = seq(from = 0, to = 30, by = 5))+
   theme_bw()+
-  labs(x = "Jahr", y = "Kaltmiete pro m²")
+  labs(x = "Jahr", y = "Kaltmiete (€/m²)")
 
 plot2 <- data_rent %>%
   filter(jahr == 2010) %>%
@@ -388,10 +417,10 @@ plot2 <- data_rent %>%
   geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete 2010", y = "Dichte in %")
+  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
@@ -402,10 +431,10 @@ plot3 <- data_rent %>%
   geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .1))+
+  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
   theme_bw() +
   theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete 2020", y = "Dichte in %")
+  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
@@ -734,10 +763,10 @@ Betrachten wir beispielsweise Cluster 3:
 Anhand dieser Werte bzw. dem Vergleich zwischen den Werten haben wir
 eine zusammenfassende Beschreibung für die 4 Gebiete erstellt:
 
-- Cluster 1: Multikulturelle Ballungsräume
-- Cluster 2: Stabile Wohngebiete
+- Cluster 1: Stabile Wohngebiete
+- Cluster 2: Sozial herausgeforderte Viertel
 - Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Sozial herausgeforderte Viertel
+- Cluster 4: Multikulturelle Ballungsräume
 
 ``` r
 plot1 <- data_social_sf %>%
@@ -921,8 +950,9 @@ NEU INTERPRETIEREN
 
 stargazer(lm_miete_jahr, lm_mietbelastung_jahr, 
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -930,7 +960,7 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Jan 31, 2024 - 11:34:00
+    ## % Date and time: Wed, Feb 07, 2024 - 08:29:35
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -942,10 +972,10 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
     ## \\[-1.8ex] & log Kaltmiete (€/m\textsuperscript{2}) & log Mietbelastung (\%) \\ 
     ## \\[-1.8ex] & (1) & (2)\\ 
     ## \hline \\[-1.8ex] 
-    ##  Jahr & 0.060$^{***}$ & 0.058$^{***}$ \\ 
-    ##   & (0.0001) & (0.0001) \\ 
-    ##   Konstante & 1.701$^{***}$ & $-$2.056$^{***}$ \\ 
+    ##  Konstante & 1.701$^{***}$ & $-$2.056$^{***}$ \\ 
     ##   & (0.0003) & (0.001) \\ 
+    ##   Jahr & 0.060$^{***}$ & 0.058$^{***}$ \\ 
+    ##   & (0.0001) & (0.0001) \\ 
     ##  \hline \\[-1.8ex] 
     ## Observations & 1,878,609 & 1,878,430 \\ 
     ## R$^{2}$ & 0.414 & 0.164 \\ 
@@ -956,6 +986,41 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
     ## \end{tabular} 
     ## \end{table}
 
+Plot
+
+``` r
+coef <- exp(predict(lm_mietbelastung_jahr, data.frame(jahr = 0))) * 100 / 
+  exp(predict(lm_miete_jahr, data.frame(jahr = 0)))
+
+expand.grid(jahr = (2007:2020) - 2007) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_jahr, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_jahr, .)) * 100) %>%
+  mutate(jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  #pivot_longer(cols = c(mietekalt_m2, mietbelastung))
+  ggplot(aes(x = jahr))+
+  geom_line(aes(y = mietekalt_m2, color = "red"))+
+  geom_line(aes(y = mietbelastung/coef, color = "blue"))+
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Miete (€/m²)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coef, name="Mietbelastung (%)")
+  )+
+  scale_color_manual(labels = c("Mietbelastung", "Miete"), values = c("blue", "red"))+
+  labs(x = "Jahr",
+       color = element_blank())+
+  theme_bw()+
+  theme(legend.position = c(0.2, 0.8),
+        legend.background = element_blank())
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+``` r
+ggsave("./plots/plot_regression_jahr_modell.png", width = 5, height = 2)
+```
+
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um
 Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis
 liefert. Dafür erstellen wir für beide Regressionsmodelle jeweils einen
@@ -963,36 +1028,38 @@ Plot, bei dem die Residuen den gefitteten, also durch das Modell
 vorhergesagten Werten gegenübergestellt werden.
 
 ``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_jahr),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_jahr),
        resids = resid(lm_miete_jahr)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_jahr),
-       resids = resid(lm_mietbelastung_jahr)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_jahr),
+       resids = resid(lm_mietbelastung_jahr))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
@@ -1124,8 +1191,9 @@ $1.5\text{pp}$. Wieder sind alle Effekte statistisch signifikant.
 
 stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt, 
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Brennpunkt", "Jahr*Brennpunkt", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr", "Brennpunkt", "Jahr*Brennpunkt"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -1133,7 +1201,7 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Jan 31, 2024 - 11:34:04
+    ## % Date and time: Wed, Feb 07, 2024 - 08:29:39
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1145,14 +1213,14 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
     ## \\[-1.8ex] & log Kaltmiete (€/m\textsuperscript{2}) & log Mietbelastung (\%) \\ 
     ## \\[-1.8ex] & (1) & (2)\\ 
     ## \hline \\[-1.8ex] 
-    ##  Jahr & 0.057$^{***}$ & 0.056$^{***}$ \\ 
+    ##  Konstante & 1.733$^{***}$ & $-$2.049$^{***}$ \\ 
+    ##   & (0.0004) & (0.001) \\ 
+    ##   Jahr & 0.057$^{***}$ & 0.056$^{***}$ \\ 
     ##   & (0.0001) & (0.0001) \\ 
     ##   Brennpunkt & $-$0.101$^{***}$ & $-$0.025$^{***}$ \\ 
     ##   & (0.001) & (0.001) \\ 
     ##   Jahr*Brennpunkt & 0.008$^{***}$ & 0.008$^{***}$ \\ 
     ##   & (0.0001) & (0.0002) \\ 
-    ##   Konstante & 1.733$^{***}$ & $-$2.049$^{***}$ \\ 
-    ##   & (0.0004) & (0.001) \\ 
     ##  \hline \\[-1.8ex] 
     ## Observations & 1,878,430 & 1,878,430 \\ 
     ## R$^{2}$ & 0.421 & 0.165 \\ 
@@ -1163,40 +1231,78 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
     ## \end{tabular} 
     ## \end{table}
 
+Plot des Regressionsmodells
+
+``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+expand.grid(jahr = (2007:2020) - 2007,
+            ist_brennpunkt = c(TRUE, FALSE)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_brennpunkt, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_brennpunkt, .)) * 100) %>%
+  mutate(jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  ggplot(aes(x = jahr, y = value, color = ist_brennpunkt, group = ist_brennpunkt))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  scale_color_manual(labels = c("nicht-Brennpunkt", "Brennpunkt"), values = c("blue", "red")) +
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "Jahr", y = element_blank(), color = element_blank())
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+#ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 2.5)
+```
+
 Wir sollten noch die Güte der Regression überprüfen, indem wir die
 Residuen betrachten.
 
 ``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_brennpunkt),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_brennpunkt),
        resids = resid(lm_miete_brennpunkt)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_brennpunkt),
-       resids = resid(lm_miete_brennpunkt)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_brennpunkt),
+       resids = resid(lm_mietbelastung_brennpunkt))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
@@ -1315,8 +1421,9 @@ summary(lm_mietbelastung_cluster)
 
 stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4", "Konstante"),
+          covariate.labels = c("Konstante", "Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -1324,7 +1431,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Jan 31, 2024 - 11:34:07
+    ## % Date and time: Wed, Feb 07, 2024 - 08:29:43
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1336,7 +1443,9 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
     ## \\[-1.8ex] & log Kaltmiete (€/m\textsuperscript{2}) & log Mietbelastung (\%) \\ 
     ## \\[-1.8ex] & (1) & (2)\\ 
     ## \hline \\[-1.8ex] 
-    ##  Jahr & 0.057$^{***}$ & 0.009$^{***}$ \\ 
+    ##  Konstante & 1.638$^{***}$ & $-$1.785$^{***}$ \\ 
+    ##   & (0.003) & (0.006) \\ 
+    ##   Jahr & 0.057$^{***}$ & 0.009$^{***}$ \\ 
     ##   & (0.0004) & (0.001) \\ 
     ##   Cluster2 & $-$0.032$^{***}$ & $-$0.121$^{***}$ \\ 
     ##   & (0.003) & (0.006) \\ 
@@ -1350,8 +1459,6 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
     ##   & (0.001) & (0.001) \\ 
     ##   Jahr*Cluster4 & 0.021$^{***}$ & 0.041$^{***}$ \\ 
     ##   & (0.0004) & (0.001) \\ 
-    ##   Konstante & 1.638$^{***}$ & $-$1.785$^{***}$ \\ 
-    ##   & (0.003) & (0.006) \\ 
     ##  \hline \\[-1.8ex] 
     ## Observations & 1,357,293 & 1,357,293 \\ 
     ## R$^{2}$ & 0.403 & 0.089 \\ 
@@ -1362,16 +1469,47 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
     ## \end{tabular} 
     ## \end{table}
 
+Plot des Regressionsmodells
+
+``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+
+expand.grid(jahr = (2007:2020) - 2007,
+            cluster = factor(1:4)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_cluster, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_cluster, .)) * 100) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung")),
+         jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  ggplot(aes(x = jahr, y = value, color = cluster))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  #scale_color_brewer(palette = "Paired")+
+  #scale_color_manual(values = c("blue", "red", "orange", "purple", "cyan", "magenta")) +
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "Jahr", y = element_blank(), color = "Cluster")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+
+``` r
+#ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
+```
+
 **ACHTUNG:** Wir müssen je das oberste und unterste 1% der Beobachtungen
 rauswerfen, da diese zu einer Verletzung der Normalverteilungsannahme
 führen. Das führt zu leicht unterschiedlichen Werten für die Betas.
-
-Zur Erinnerung, die Cluster haben wir wie folgt beschrieben:
-
-- Cluster 1: Stabile Wohngebiete
-- Cluster 2: Sozial herausgeforderte Viertel
-- Cluster 3: Wohlhabende Seniorengemeinschaften
-- Cluster 4: Multikulturelle Ballungsräume
 
 Insgesamt zeigt sich ein R^2 von 0.38. Das ist, gemessen an unserem
 “kleinen” Modell, schon beachtlich.
@@ -1380,36 +1518,38 @@ Wir sollten noch die Güte der Regression überprüfen, indem wir die
 Residuen betrachten.
 
 ``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_miete_cluster),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_miete_cluster),
        resids = resid(lm_miete_cluster)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_cluster),
-       resids = resid(lm_mietbelastung_cluster)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_cluster),
+       resids = resid(lm_mietbelastung_cluster))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
@@ -1436,33 +1576,35 @@ lm_mietekalt_LQ <- data_rent %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
          mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+  lm(log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender + LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
 
 summary(lm_mietekalt_LQ)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender, 
-    ##     data = .)
+    ## lm(formula = log(mietekalt_m2) ~ jahr + LQ_arbeitslose + LQ_auslaender + 
+    ##     LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
     ## 
     ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -1.3260 -0.1830 -0.0214  0.1678  1.3916 
+    ##      Min       1Q   Median       3Q      Max 
+    ## -1.26013 -0.17991 -0.02092  0.16492  1.37576 
     ## 
     ## Coefficients:
-    ##                  Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)     1.894e+00  8.342e-04  2270.5   <2e-16 ***
-    ## jahr            6.602e-02  7.469e-05   883.9   <2e-16 ***
-    ## LQ_arbeitslose -2.846e-01  6.447e-04  -441.4   <2e-16 ***
-    ## LQ_auslaender   6.733e-02  3.265e-04   206.2   <2e-16 ***
+    ##                       Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)          2.0319257  0.0015652 1298.22   <2e-16 ***
+    ## jahr                 0.0408227  0.0002431  167.92   <2e-16 ***
+    ## LQ_arbeitslose      -0.3323799  0.0014136 -235.14   <2e-16 ***
+    ## LQ_auslaender       -0.0161301  0.0007254  -22.24   <2e-16 ***
+    ## jahr:LQ_arbeitslose  0.0081157  0.0002137   37.98   <2e-16 ***
+    ## jahr:LQ_auslaender   0.0160260  0.0001225  130.80   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.2621 on 1357294 degrees of freedom
+    ## Residual standard error: 0.2599 on 1357292 degrees of freedom
     ##   (521311 observations deleted due to missingness)
-    ## Multiple R-squared:  0.4183, Adjusted R-squared:  0.4183 
-    ## F-statistic: 3.254e+05 on 3 and 1357294 DF,  p-value: < 2.2e-16
+    ## Multiple R-squared:  0.4278, Adjusted R-squared:  0.4278 
+    ## F-statistic: 2.03e+05 on 5 and 1357292 DF,  p-value: < 2.2e-16
 
 **Interpretation:** Die Konstante ist in diesem Modell schwierig zu
 interpretieren. Sie würde die log Kaltmiete im Jahr 2007 in einem Gebiet
@@ -1508,41 +1650,44 @@ lm_mietbelastung_LQ <- data_rent %>%
   filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
   mutate(mietbelastung = mietekalt*12 / kaufkraft_pro_haushalt) %>%
   mutate(jahr = jahr - 2007) %>%
-  lm(log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender, data = .)
+  lm(log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender + LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
 
 summary(lm_mietbelastung_LQ)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender, 
-    ##     data = .)
+    ## lm(formula = log(mietbelastung) ~ jahr + LQ_arbeitslose + LQ_auslaender + 
+    ##     LQ_arbeitslose:jahr + LQ_auslaender:jahr, data = .)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -4.8413 -0.3405 -0.0583  0.2884  3.3024 
+    ## -4.8263 -0.3366 -0.0608  0.2853  3.3360 
     ## 
     ## Coefficients:
-    ##                  Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)    -1.6385785  0.0016216 -1010.5   <2e-16 ***
-    ## jahr            0.0360089  0.0001452   248.0   <2e-16 ***
-    ## LQ_arbeitslose -0.2832175  0.0012534  -226.0   <2e-16 ***
-    ## LQ_auslaender   0.0709953  0.0006346   111.9   <2e-16 ***
+    ##                       Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)         -1.7433372  0.0030545 -570.74   <2e-16 ***
+    ## jahr                 0.0521088  0.0004744  109.83   <2e-16 ***
+    ## LQ_arbeitslose      -0.0749211  0.0027586  -27.16   <2e-16 ***
+    ## LQ_auslaender       -0.0435210  0.0014157  -30.74   <2e-16 ***
+    ## jahr:LQ_arbeitslose -0.0352928  0.0004170  -84.63   <2e-16 ***
+    ## jahr:LQ_auslaender   0.0211725  0.0002391   88.55   <2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.5095 on 1357294 degrees of freedom
+    ## Residual standard error: 0.5073 on 1357292 degrees of freedom
     ##   (521311 observations deleted due to missingness)
-    ## Multiple R-squared:  0.07739,    Adjusted R-squared:  0.07739 
-    ## F-statistic: 3.795e+04 on 3 and 1357294 DF,  p-value: < 2.2e-16
+    ## Multiple R-squared:  0.08543,    Adjusted R-squared:  0.08543 
+    ## F-statistic: 2.536e+04 on 5 and 1357292 DF,  p-value: < 2.2e-16
 
 ``` r
 # Stargazer Tabelle
 
 stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
           dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
-          covariate.labels = c("Jahr", "LQ Arbeitslose", "LQ Auslaenderanteil", "Konstante"),
-          omit.stat = c("ser", "f"), single.row = FALSE, 
+          covariate.labels = c("Konstante", "Jahr", "LQ Arbeitslose", "LQ Ausländer", "LQ Arbeitslose*Jahr", "LQ Ausländer*Jahr"),
+          omit.stat = c("ser", "f"), single.row = FALSE,
+          intercept.bottom = FALSE,
           no.space = TRUE,
           dep.var.caption = "\\textit{Abhängige Variable}",
           notes.label = "\\textit{Anmerkung:}")
@@ -1550,7 +1695,7 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Jan 31, 2024 - 11:34:10
+    ## % Date and time: Wed, Feb 07, 2024 - 08:29:46
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1562,58 +1707,109 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
     ## \\[-1.8ex] & log Kaltmiete (€/m\textsuperscript{2}) & log Mietbelastung (\%) \\ 
     ## \\[-1.8ex] & (1) & (2)\\ 
     ## \hline \\[-1.8ex] 
-    ##  Jahr & 0.066$^{***}$ & 0.036$^{***}$ \\ 
-    ##   & (0.0001) & (0.0001) \\ 
-    ##   LQ Arbeitslose & $-$0.285$^{***}$ & $-$0.283$^{***}$ \\ 
+    ##  Konstante & 2.032$^{***}$ & $-$1.743$^{***}$ \\ 
+    ##   & (0.002) & (0.003) \\ 
+    ##   Jahr & 0.041$^{***}$ & 0.052$^{***}$ \\ 
+    ##   & (0.0002) & (0.0005) \\ 
+    ##   LQ Arbeitslose & $-$0.332$^{***}$ & $-$0.075$^{***}$ \\ 
+    ##   & (0.001) & (0.003) \\ 
+    ##   LQ Ausländer & $-$0.016$^{***}$ & $-$0.044$^{***}$ \\ 
     ##   & (0.001) & (0.001) \\ 
-    ##   LQ Auslaenderanteil & 0.067$^{***}$ & 0.071$^{***}$ \\ 
-    ##   & (0.0003) & (0.001) \\ 
-    ##   Konstante & 1.894$^{***}$ & $-$1.639$^{***}$ \\ 
-    ##   & (0.001) & (0.002) \\ 
+    ##   LQ Arbeitslose*Jahr & 0.008$^{***}$ & $-$0.035$^{***}$ \\ 
+    ##   & (0.0002) & (0.0004) \\ 
+    ##   LQ Ausländer*Jahr & 0.016$^{***}$ & 0.021$^{***}$ \\ 
+    ##   & (0.0001) & (0.0002) \\ 
     ##  \hline \\[-1.8ex] 
     ## Observations & 1,357,298 & 1,357,298 \\ 
-    ## R$^{2}$ & 0.418 & 0.077 \\ 
-    ## Adjusted R$^{2}$ & 0.418 & 0.077 \\ 
+    ## R$^{2}$ & 0.428 & 0.085 \\ 
+    ## Adjusted R$^{2}$ & 0.428 & 0.085 \\ 
     ## \hline 
     ## \hline \\[-1.8ex] 
     ## \textit{Anmerkung:} & \multicolumn{2}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
     ## \end{tabular} 
     ## \end{table}
 
+Plot Regressionsmodelle
+
+``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete (€/m²)",
+  'mietbelastung'="Mietbelastung (%)"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+
+expand.grid(jahr = (2007:2020) - 2007,
+            LQ_arbeitslose = seq(from = 0, to = 2, by = 0.1) %>% round(1),
+            LQ_auslaender = seq(from = 0, to = 2, by = 0.1) %>% round(1)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_mietekalt_LQ, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_LQ, .)) * 100) %>%
+  filter(LQ_arbeitslose %in% c(0.2, 1.2)) %>%
+  filter(LQ_auslaender %in% c(0.2, 1.2)) %>%
+  pivot_longer(cols = c(mietekalt_m2, mietbelastung)) %>%
+  mutate(name = factor(name, levels = c("mietekalt_m2", "mietbelastung")),
+         jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  ggplot(aes(x = jahr, y = value, color = as_factor(LQ_auslaender), linetype = as_factor(LQ_arbeitslose)))+
+  geom_line()+
+  facet_wrap(~name, scales = "free", labeller = facet_labeller)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%y")+
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c("blue", "red", "green", "black")) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash"))+
+  theme_bw()+
+  theme(legend.position = "top",
+        #legend.box = "vertical",
+        #legend.margin = margin(t = 2, b = -5, l = 0, r = 0)
+        )+
+  labs(x = "Jahr", y = element_blank(), color = "LQ-Ausländer", linetype = "LQ-Arbeitslose")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+
+``` r
+#ggsave("./plots/plot_regression_lq_modell.png", width = 5, height = 2.5)
+```
+
 Wir sollten noch die Güte der Regression überprüfen, indem wir die
 Residuen betrachten.
 
 ``` r
+facet_names <- list(
+  'mietekalt_m2'="Miete",
+  'mietbelastung'="Mietbelastung"
+)
+
+facet_labeller <- function(variable,value){
+  return(facet_names[value])
+}
+
+# ------
+
 set.seed(1)
 
-plot1 <- tibble(fitted = fitted(lm_mietekalt_LQ),
+tibble(model = "mietekalt_m2",
+  fitted = fitted(lm_mietekalt_LQ),
        resids = resid(lm_mietekalt_LQ)) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = fitted, y = resids)) +
-  geom_point(alpha = .05, size = .4) +
-  scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
-  theme_bw() +
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "Residuals",
-       subtitle = "Miete")
-
-
-
-plot2 <- tibble(fitted = fitted(lm_mietbelastung_LQ),
-       resids = resid(lm_mietbelastung_LQ)) %>%
-  slice_sample(n = 10000) %>%
+  rbind(
+    tibble(model = "mietbelastung",
+      fitted = fitted(lm_mietbelastung_LQ),
+       resids = resid(lm_mietbelastung_LQ))
+  ) %>%
+  mutate(model = factor(model, levels = c("mietekalt_m2", "mietbelastung"))) %>%
+  slice_sample(n = 10000, by = model) %>%
   ggplot(aes(x = fitted, y = resids))+
   geom_point(alpha = .05, size = .2)+
+  facet_wrap(~model, scales = "free", labeller = facet_labeller)+
   scale_y_continuous(limits = function(x) c(quantile(x, 0.05, na.rm = TRUE), quantile(x, 0.95, na.rm = TRUE))) +
   theme_bw()+
-  theme(plot.subtitle = element_text(hjust = .5))+
-  labs(x = "Fitted", y = "",
-       subtitle = "Mietbelastung")
-
-ggarrange(plot1, plot2, nrow = 1)
+  labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
@@ -1629,122 +1825,8 @@ ggarrange(plot1, plot2, nrow = 1)
 
 Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
 
-## Wieso springt der Ausländeranteil in 2017 plötzlich?
-
 ``` r
-data_social %>%
-  select(arbeitslosenquote, anteil_auslaender, jahr) %>%
-  drop_na() %>%
-  filter(jahr >= 2016) %>%
-  slice_sample(n = 10000) %>%
-  ggplot(aes(x = arbeitslosenquote, y = anteil_auslaender, color = as_factor(jahr)))+
-  geom_point(alpha = .1)+
-  facet_wrap(~jahr, ncol = 1)
+rnorm(1)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
-
-``` r
-data_social %>%
-  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
-  drop_na() %>%
-  filter(jahr >= 2016) %>%
-  ggplot(aes(x = anteil_auslaender))+
-  geom_density()+
-  facet_wrap(~jahr, ncol = 1)
-```
-
-![](auswertung_files/figure-gfm/unnamed-chunk-35-2.png)<!-- -->
-
-``` r
-auslaender_berlin_destatis <- read_csv2("/Users/sebastiangeis/Downloads/12411-0014-DLAND_$F_flat.csv") %>%
-  janitor::clean_names() %>%
-  select(zeit, x2_auspraegung_label, x3_auspraegung_label, x4_auspraegung_label, bevstd_bevoelkerungsstand_anzahl) %>%
-  filter(x2_auspraegung_label == "Insgesamt",
-         x3_auspraegung_label %in% c("Ausl\xe4nder", "Insgesamt"),
-         x4_auspraegung_label == "Insgesamt") %>%
-  select(-x2_auspraegung_label, -x4_auspraegung_label) %>%
-  mutate(datum = dmy(zeit),
-         jahr = year(datum)+1) %>%
-  select(-zeit, -datum) %>%
-  filter(jahr %in% (data_social %>% distinct(jahr) %>% pull(jahr))) %>%
-  mutate(x3_auspraegung_label = case_when(x3_auspraegung_label == "Ausl\xe4nder" ~ "Auslaender",
-                                          TRUE ~ x3_auspraegung_label)) %>%
-  pivot_wider(names_from = x3_auspraegung_label, values_from = bevstd_bevoelkerungsstand_anzahl) %>%
-  mutate(anteil_auslaender_destatis = (Auslaender / Insgesamt) * 100) %>%
-  select(jahr, anteil_auslaender_destatis)
-```
-
-    ## ℹ Using "','" as decimal and "'.'" as grouping mark. Use `read_delim()` for more control.
-
-    ## Rows: 19044 Columns: 22
-    ## ── Column specification ────────────────────────────────────────────────────────
-    ## Delimiter: ";"
-    ## chr (18): Statistik_Label, Zeit_Code, Zeit_Label, 1_Merkmal_Code, 1_Merkmal_...
-    ## dbl  (3): Statistik_Code, 1_Auspraegung_Code, BEVSTD__Bevoelkerungsstand__An...
-    ## num  (1): Zeit
-    ## 
-    ## ℹ Use `spec()` to retrieve the full column specification for this data.
-    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-
-``` r
-data_social %>%
-  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
-  drop_na() %>%
-  group_by(jahr) %>%
-  summarise(mean_anteil_auslaender = mean(anteil_auslaender),
-            mean_anteil_auslaender_weighted = weighted.mean(anteil_auslaender, anzahl_haushalte)) %>%
-  left_join(auslaender_berlin_destatis, by = "jahr") %>%
-  kbl(
-    format = "latex",
-    digits = 2,
-    booktabs = T,
-    toprule = "\\hline \\hline",
-    midrule = "\\hline",
-    bottomrule = "\\hline \\hline",
-    linesep = c("", "", "", "\\addlinespace"),
-  ) %>%
-  cat()
-```
-
-    ## 
-    ## \begin{tabular}[t]{rrrr}
-    ## \hline \hline
-    ## jahr & mean\_anteil\_auslaender & mean\_anteil\_auslaender\_weighted & anteil\_auslaender\_destatis\\
-    ## \hline
-    ## 2005 & 6.53 & 10.14 & 13.42\\
-    ## 2009 & 6.51 & 10.09 & 14.00\\
-    ## 2010 & 6.51 & 10.06 & 13.75\\
-    ## 2011 & 6.50 & 10.04 & 13.65\\
-    ## \addlinespace
-    ## 2012 & 6.50 & 10.02 & 11.89\\
-    ## 2013 & 6.45 & 9.96 & 12.63\\
-    ## 2014 & 6.46 & 9.96 & 13.42\\
-    ## 2015 & 6.45 & 9.95 & 14.31\\
-    ## \addlinespace
-    ## 2016 & 6.46 & 9.96 & 15.50\\
-    ## 2017 & 20.91 & 28.79 & 16.74\\
-    ## 2018 & 21.22 & 29.28 & 17.65\\
-    ## 2019 & 22.93 & 31.87 & 18.53\\
-    ## \hline \hline
-    ## \end{tabular}
-
-``` r
-p1 <- data_social_sf %>%
-  filter(jahr %in% 2016) %>%
-  ggplot()+
-  geom_sf(aes(fill = anteil_auslaender))+
-  scale_fill_viridis_c()+
-  labs(subtitle = "Ausländeranteil 2016")
-
-p2 <- data_social_sf %>%
-  filter(jahr %in% 2017) %>%
-  ggplot()+
-  geom_sf(aes(fill = anteil_auslaender))+
-  scale_fill_viridis_c()+
-  labs(subtitle = "Ausländeranteil 2017")
-
-ggarrange(p1, p2, ncol = 1)
-```
-
-![](auswertung_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+    ## [1] -0.1823902
