@@ -689,6 +689,36 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
           notes.label = "\\textit{Anmerkung:}")
 ```
 
+Plot
+```{r fig.width=5, fig.height=2}
+coef <- exp(predict(lm_mietbelastung_jahr, data.frame(jahr = 0))) * 100 / 
+  exp(predict(lm_miete_jahr, data.frame(jahr = 0)))
+
+expand.grid(jahr = (2007:2020) - 2007) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_miete_jahr, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_jahr, .)) * 100) %>%
+  mutate(jahr = jahr + 2007,
+         jahr = lubridate::ymd(paste(jahr, 01, 01, sep = "-"))) %>%
+  #pivot_longer(cols = c(mietekalt_m2, mietbelastung))
+  ggplot(aes(x = jahr))+
+  geom_line(aes(y = mietekalt_m2, color = "red"))+
+  geom_line(aes(y = mietbelastung/coef, color = "blue"))+
+  scale_y_continuous(
+    # Features of the first axis
+    name = "Miete (€/m²)",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coef, name="Mietbelastung (%)")
+  )+
+  scale_color_manual(labels = c("Mietbelastung", "Miete"), values = c("blue", "red"))+
+  labs(x = "Jahr",
+       color = element_blank())+
+  theme_bw()+
+  theme(legend.position = c(0.2, 0.8),
+        legend.background = element_blank())
+
+ggsave("./plots/plot_regression_jahr_modell.png", width = 5, height = 2)
+```
+
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um Sicher zu gehen, dass der t-Test überhaupt ein sinnvolles Ergebnis liefert. Dafür erstellen wir für beide Regressionsmodelle jeweils einen Plot, bei dem die Residuen den gefitteten, also durch das Modell vorhergesagten Werten gegenübergestellt werden.
 ```{r warning=FALSE, fig.width=5, fig.height=2}
