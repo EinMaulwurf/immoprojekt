@@ -784,7 +784,7 @@ plot1 <- data_social_sf %>%
   filter(jahr == 2010) %>%
   ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
   geom_sf()+
-  scale_fill_viridis_c()+
+  scale_fill_viridis_c(breaks = c(5, 10, 15, 20))+
   labs(subtitle = "Arbeitslosenquote in %",
        fill = element_blank())+
   theme_bw()+
@@ -798,7 +798,7 @@ plot2 <- data_social_sf %>%
   filter(jahr == 2019) %>%
   ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
   geom_sf()+
-  scale_fill_viridis_c()+
+  scale_fill_viridis_c(breaks = c(5, 10, 15, 20))+
   labs(subtitle = "Arbeitslosenquote in %",
        fill = element_blank())+
   theme_bw()+
@@ -868,6 +868,33 @@ plot2 <- data_social_sf %>%
   geom_sf()+
   scale_fill_viridis_c()+
   labs(subtitle = "Ausländeranteil in %",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+```
+
+Verteilung nach LQ
+```{r}
+data_LQ_sf <- data_social_sf %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
+  group_by(jahr) %>%
+  filter(!is.na(anzahl_haushalte)) %>%
+  mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE),
+         .keep = c("unused")) %>%
+  ungroup()
+
+
+data_LQ_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = LQ_arbeitslose, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "LQ Arbeitslose",
        fill = element_blank())+
   theme_bw()+
   theme(legend.position = "top",

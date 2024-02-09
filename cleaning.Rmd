@@ -72,7 +72,7 @@ head(data_rent)
 # Filtering data_social
 # Renaming and adding variables
 data_social <- data_social_complete %>%
-  select(r1_id, year, r1_mba_a_haushalt, r1_mps_p_obmittel, r1_mps_p_ober, r1_kkr_w_summe, r1_mbe_p_haustyp_1:r1_mbe_p_haustyp_6, r1_alq_p_quote, r1_met_p_deutschl, r1_mri_p_risiko_1:r1_mri_p_risiko_9, r1_eag_p_m60bis65:r1_eag_p_m75undgr, r1_eag_p_w60bis65:r1_eag_p_w75undgr) %>%
+  select(r1_id, year, r1_mba_a_haushalt, r1_mps_p_obmittel, r1_mps_p_ober, r1_kkr_w_summe, r1_mbe_p_haustyp_1:r1_mbe_p_haustyp_6, r1_alq_p_quote, r1_met_p_deutschl, r1_mri_p_risiko_1:r1_mri_p_risiko_9, r1_eag_p_m60bis65:r1_eag_p_m75undgr, r1_eag_p_w60bis65:r1_eag_p_w75undgr, r1_mso_p_singles, r1_mso_p_familien) %>%
   filter(r1_id %in% r1_ids) %>%
   mutate_if(is.numeric, ~na_if(., -1)) %>%
   mutate(jahr = year,
@@ -86,6 +86,8 @@ data_social <- data_social_complete %>%
          anteil_auslaender = 100 - r1_met_p_deutschl,
          kreditrisiko = (r1_mri_p_risiko_1 * 1 + r1_mri_p_risiko_2 * 2 + r1_mri_p_risiko_3 * 3 + r1_mri_p_risiko_4 * 4 + r1_mri_p_risiko_5 * 5 + r1_mri_p_risiko_6 * 6 + r1_mri_p_risiko_7 * 7 + r1_mri_p_risiko_8 * 8 + r1_mri_p_risiko_9 * 9) / 900,
          anteil_60_plus = r1_eag_p_m60bis65 + r1_eag_p_m65bis75 + r1_eag_p_m75undgr + r1_eag_p_w60bis65 + r1_eag_p_w65bis75 + r1_eag_p_w75undgr,
+         singles = r1_mso_p_singles,
+         familien = r1_mso_p_familien,
          .keep = "unused")
 
 # Removing the original data
