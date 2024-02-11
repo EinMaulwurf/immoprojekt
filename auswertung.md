@@ -413,28 +413,28 @@ plot2 <- data_rent %>%
   filter(mietekalt > 50, mietekalt < 10000) %>%
   ggplot(aes(x = mietekalt, y = after_stat(density))) +
   geom_histogram(binwidth = 20) +
-  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .8, linetype = "dashed") +
-  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
   theme_bw() +
-  theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte")
+  theme(legend.position = c(0.75, 0.75), legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte (%)")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
   filter(mietekalt > 50, mietekalt < 10000) %>%
   ggplot(aes(x = mietekalt, y = after_stat(density))) +
   geom_histogram(binwidth = 20) +
-  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .8, linetype = "dashed") +
-  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
   theme_bw() +
-  theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte")
+  theme(legend.position = "none", legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte (%)")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
@@ -444,7 +444,7 @@ ggarrange(plot1,
 ![](auswertung_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
-#ggsave("./plots/plot_miete.png")
+#ggsave("./plots/plot_miete.png", width = 5, height = 3)
 ```
 
 Mittlere Kaltmiete auf Karte
@@ -960,7 +960,7 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Feb 07, 2024 - 08:29:35
+    ## % Date and time: Sun, Feb 11, 2024 - 11:23:23
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1018,7 +1018,7 @@ expand.grid(jahr = (2007:2020) - 2007) %>%
 ![](auswertung_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
-ggsave("./plots/plot_regression_jahr_modell.png", width = 5, height = 2)
+#ggsave("./plots/plot_regression_jahr_modell.png", width = 5, height = 2)
 ```
 
 Zunächst wollen wir noch die Robustheit der Regression überprüfen um
@@ -1079,6 +1079,28 @@ Hierzu müssen wir neben `data_rent` auch `data_social` verwenden. Wir
 definieren einen “Brennpunkt” als eine Gegend, in der die
 Arbeitslosenquote 2015 über 10% liegt und wo die Kaufkraft im unteren
 20% Quantil liegt.
+
+``` r
+data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2), TRUE, FALSE)) %>%
+  mutate(ist_brennpunkt = if_else(ist_brennpunkt, "Ja", "Nein")) %>%
+  ggplot()+
+  geom_sf(aes(fill = ist_brennpunkt))+
+  scale_fill_manual(values = c("red", "lightgrey"))+
+  theme_bw()+
+  theme(legend.position = "right",
+        axis.text = element_blank(),
+        axis.ticks = element_blank())+
+  labs(fill = "Brennpunkt?")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+#ggsave("./plots/plot_brennpunkte.png", width = 5, height = 2)
+```
 
 Als Regressionsmodell verwenden wir
 $\log(\text{Kaltmiete}_i) = \beta_0 + \beta_1 \cdot \text{Jahr}_i + \beta_2 \cdot \text{Brennpunkt}_i + \beta_3 \cdot \text{Brennpunkt}_i\cdot \text{Jahr}_i + \epsilon_i$
@@ -1201,7 +1223,7 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Feb 07, 2024 - 08:29:39
+    ## % Date and time: Sun, Feb 11, 2024 - 11:23:27
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1261,7 +1283,7 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = element_blank())
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 2.5)
@@ -1302,7 +1324,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
@@ -1431,7 +1453,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Feb 07, 2024 - 08:29:43
+    ## % Date and time: Sun, Feb 11, 2024 - 11:23:31
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1501,7 +1523,7 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = "Cluster")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
@@ -1549,7 +1571,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
@@ -1560,6 +1582,31 @@ ziemlich gut erfüllt und wir können den Ergebnissen der Tests (besser)
 vertrauen.
 
 ## LQ Quotienten
+
+``` r
+data_social_sf %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
+  group_by(jahr) %>%
+  filter(!is.na(anzahl_haushalte)) %>%
+  mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE),
+         .keep = c("unused")) %>%
+  ungroup() %>%
+  filter(jahr == 2015) %>%
+  ggplot()+
+  geom_sf(aes(fill = LQ_arbeitslose))
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+
+``` r
+data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot()+
+  geom_sf(aes(fill = arbeitslosenquote))
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-33-2.png)<!-- -->
 
 ``` r
 data_LQ <- data_social %>%
@@ -1695,7 +1742,7 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Wed, Feb 07, 2024 - 08:29:46
+    ## % Date and time: Sun, Feb 11, 2024 - 11:23:34
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1768,7 +1815,7 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = "LQ-Ausländer", linetype = "LQ-Arbeitslose")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_lq_modell.png", width = 5, height = 2.5)
@@ -1809,7 +1856,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)
