@@ -1,10 +1,14 @@
 Here's a step by step guide on how to set up Git on Windows and get started.
 
 1.  Install Git:
+    
     a.  Visit the Git download page at <https://git-scm.com/download/win>.
+    
     b.  The download should start automatically. If not, click the link to download the latest version of Git for Windows.
+    
     c.  Run the downloaded installer and follow the installation steps with the default options.
 2.  Configure Git:
+    
     a.  Open Git Bash (search for it in the Start menu).
 
     b.  Set your name and email using the following commands (replace with your actual name and email):
@@ -14,6 +18,7 @@ Here's a step by step guide on how to set up Git on Windows and get started.
     git config --global user.email "youremail@example.com"
     ```
 3.  Generate SSH keys:
+    
     a.  In Git Bash, run the following command (replace with your actual email):
 
     ```         
@@ -24,6 +29,7 @@ Here's a step by step guide on how to set up Git on Windows and get started.
 
     c.  Enter a secure passphrase when prompted (optional).
 4.  Add the SSH key to the ssh-agent:
+    
     a.  Start the ssh-agent in the background:
 
     ```         
@@ -36,6 +42,7 @@ Here's a step by step guide on how to set up Git on Windows and get started.
     ssh-add ~/.ssh/id_ed25519
     ```
 5.  Add the SSH key to your GitHub account:
+    
     a.  Copy the public SSH key to your clipboard:
 
     ```         
@@ -104,10 +111,15 @@ After setting up Git and configuring SSH keys, you can follow these steps to clo
     ```
 
 6. Create a pull request to merge the changes into the main branch:
+   
    a. Go to the GitHub repository page and click the "Pull requests" tab.
+   
    b. Click the "New pull request" button.
+   
    c. In the "base" dropdown, make sure "main" is selected. In the "compare" dropdown, select the branch you created (`<branch_name>`).
+   
    d. Review the changes and click "Create pull request".
+   
    e. Add a title and description for the pull request, then click "Create pull request" again.
 
 Now the changes you made will be available in the remote repository on GitHub.
