@@ -9,16 +9,16 @@ Here's a step by step guide on how to set up Git on Windows and get started.
 
     b.  Set your name and email using the following commands (replace with your actual name and email):
 
-        ```         
-        git config --global user.name "Your Name"
-        git config --global user.email "youremail@example.com"
-        ```
+    ```         
+    git config --global user.name "Your Name"
+    git config --global user.email "youremail@example.com"
+    ```
 3.  Generate SSH keys:
     a.  In Git Bash, run the following command (replace with your actual email):
 
-        ```         
-        ssh-keygen -t ed25519 -C "youremail@example.com"
-        ```
+    ```         
+    ssh-keygen -t ed25519 -C "youremail@example.com"
+    ```
 
     b.  Press Enter to accept the default file location for the SSH key.
 
@@ -26,21 +26,21 @@ Here's a step by step guide on how to set up Git on Windows and get started.
 4.  Add the SSH key to the ssh-agent:
     a.  Start the ssh-agent in the background:
 
-        ```         
-        eval "$(ssh-agent -s)"
-        ```
+    ```         
+    eval "$(ssh-agent -s)"
+    ```
 
     b.  Add the SSH key to the ssh-agent:
 
-        ```         
-        ssh-add ~/.ssh/id_ed25519
-        ```
+    ```         
+    ssh-add ~/.ssh/id_ed25519
+    ```
 5.  Add the SSH key to your GitHub account:
     a.  Copy the public SSH key to your clipboard:
 
-        ```         
-        clip < ~/.ssh/id_ed25519.pub
-        ```
+    ```         
+    clip < ~/.ssh/id_ed25519.pub
+    ```
 
     b.  Go to your GitHub account settings: <https://github.com/settings/keys>
 
@@ -60,9 +60,9 @@ After setting up Git and configuring SSH keys, you can follow these steps to clo
 
     d.  Run the following command to clone the repo (replace `<repo_url>` with the copied SSH URL):
 
-        ```         
-        git clone <repo_url>
-        ```
+    ```         
+    git clone <repo_url>
+    ```
 
     e.  The repository will be cloned to a new folder with the same name as the repository.
 
@@ -72,9 +72,9 @@ After setting up Git and configuring SSH keys, you can follow these steps to clo
 
     b.  Create a new branch and switch to it using the following command (replace `<branch_name>` with a descriptive name for the branch):
 
-        ```         
-        git checkout -b <branch_name>
-        ```
+    ```         
+    git checkout -b <branch_name>
+    ```
 
 3.  Make changes to the project:
 
@@ -87,15 +87,15 @@ After setting up Git and configuring SSH keys, you can follow these steps to clo
 
     b.  Stage the changes:
 
-        ```         
-        git add .
-        ```
+    ```         
+    git add .
+    ```
 
     c.  Commit the changes with a descriptive message:
 
-        ```         
-        git commit -m "A brief description of the changes made"
-        ```
+    ```         
+    git commit -m "A brief description of the changes made"
+    ```
 
 5.  Push the changes to the remote repository on GitHub, but this time to the new branch:
 
