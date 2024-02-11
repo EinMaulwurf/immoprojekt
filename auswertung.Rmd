@@ -255,7 +255,7 @@ Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von 1016km�
 
 ## Rent Daten
 Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
-```{r, fig.width=7.5, fig.height=4.5}
+```{r, fig.width=5, fig.height=3}
 plot1 <- data_rent %>%
   filter(jahr %in% 2010:2020) %>%
   mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
@@ -273,34 +273,34 @@ plot2 <- data_rent %>%
   filter(mietekalt > 50, mietekalt < 10000) %>%
   ggplot(aes(x = mietekalt, y = after_stat(density))) +
   geom_histogram(binwidth = 20) +
-  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .8, linetype = "dashed") +
-  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
   theme_bw() +
-  theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte")
+  theme(legend.position = c(0.75, 0.75), legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte (%)")
 
 plot3 <- data_rent %>%
   filter(jahr == 2020) %>%
   filter(mietekalt > 50, mietekalt < 10000) %>%
   ggplot(aes(x = mietekalt, y = after_stat(density))) +
   geom_histogram(binwidth = 20) +
-  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .8, linetype = "dashed") +
-  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .8, linetype = "dashed") +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
   scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
   coord_cartesian(xlim = c(0, 2000)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = .01))+
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
   theme_bw() +
-  theme(legend.position = c(0.8, 0.8), legend.title = element_blank(), legend.background = element_blank())+
-  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte")
+  theme(legend.position = "none", legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte (%)")
 
 ggarrange(plot1,
           ggarrange(plot2, plot3, nrow = 2),
           nrow = 1)
 
-#ggsave("./plots/plot_miete.png")
+#ggsave("./plots/plot_miete.png", width = 5, height = 3)
 ```
 
 Mittlere Kaltmiete auf Karte
@@ -765,7 +765,7 @@ Hat sich die Miete in Brennpunkten über die Jahre stärker erhöht?
 
 Hierzu müssen wir neben `data_rent` auch `data_social` verwenden. Wir definieren einen "Brennpunkt" als eine Gegend, in der die Arbeitslosenquote 2015 über 10% liegt und wo die Kaufkraft im unteren 20% Quantil liegt.
 
-```{r fig.width=5, fig.height=2.5}
+```{r fig.width=5, fig.height=2}
 data_social_sf %>%
   filter(jahr == 2015) %>%
   filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
@@ -775,12 +775,12 @@ data_social_sf %>%
   geom_sf(aes(fill = ist_brennpunkt))+
   scale_fill_manual(values = c("red", "lightgrey"))+
   theme_bw()+
-  theme(legend.position = "top",
+  theme(legend.position = "right",
         axis.text = element_blank(),
         axis.ticks = element_blank())+
   labs(fill = "Brennpunkt?")
 
-#ggsave("./plots/plot_brennpunkte.png", width = 5, height = 2.5)
+#ggsave("./plots/plot_brennpunkte.png", width = 5, height = 2)
 ```
 
 
@@ -1047,6 +1047,26 @@ Jetzt (nach der Ausreißerbereinigung) ist die Normalverteilungsannahme ziemlich
 
 
 ## LQ Quotienten
+
+```{r}
+data_social_sf %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
+  group_by(jahr) %>%
+  filter(!is.na(anzahl_haushalte)) %>%
+  mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE),
+         .keep = c("unused")) %>%
+  ungroup() %>%
+  filter(jahr == 2015) %>%
+  ggplot()+
+  geom_sf(aes(fill = LQ_arbeitslose))
+
+data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot()+
+  geom_sf(aes(fill = arbeitslosenquote))
+```
+
 
 ```{r}
 data_LQ <- data_social %>%
