@@ -1167,6 +1167,60 @@ expand.grid(jahr = (2007:2020) - 2007,
 #ggsave("./plots/plot_regression_lq_modell.png", width = 5, height = 2.5)
 ```
 
+Plot Zusammenhang Miete, LQ für 2015
+```{r}
+expand.grid(jahr = 2015 - 2007,
+            LQ_arbeitslose = seq(from = 0, to = 2, by = 0.01) %>% round(2),
+            LQ_auslaender = seq(from = 0, to = 2, by = 0.01) %>% round(2)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_mietekalt_LQ, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_LQ, .)) * 100) %>%
+  ggplot(aes(x = LQ_arbeitslose, y = LQ_auslaender, fill = mietekalt_m2))+
+  geom_raster()+
+  scale_fill_viridis_c()+
+  coord_fixed()+
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "LQ-Arbeitslose", y = "LQ-Ausländer")
+
+
+
+data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
+         mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(LQ_arbeitslose = mean(LQ_arbeitslose),
+            LQ_auslaender = mean(LQ_auslaender),
+            mietekalt_m2 = mean(mietekalt_m2)) %>%
+  ungroup() %>%
+  ggplot(aes(x = LQ_arbeitslose, y = LQ_auslaender, color = mietekalt_m2))+
+  geom_point()+
+  scale_color_viridis_c()+
+  coord_fixed(xlim = c(0, 2), ylim = c(0, 2))+
+  theme_bw()+
+    theme(legend.position = "top")
+
+data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
+         mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(LQ_arbeitslose = mean(LQ_arbeitslose),
+            LQ_auslaender = mean(LQ_auslaender),
+            mietekalt_m2 = mean(mietekalt_m2)) %>%
+  ungroup() %>%
+  ggplot(aes(x = LQ_auslaender, y = mietekalt_m2, color = mietekalt_m2))+
+  geom_point()+
+  scale_color_viridis_c()+
+  coord_cartesian(xlim = c(0.1, 2))+
+  scale_y_continuous(trans = "log")+
+  scale_x_continuous(trans = "log")+
+  theme_bw()+
+    theme(legend.position = "top")
+```
+
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die Residuen betrachten.
 ```{r warning=FALSE, fig.width=5, fig.height=2}
@@ -1215,4 +1269,3 @@ Dies ist ein Test. Das sollte nur auf dem test_branch auftauchen.
 ```{r}
 rnorm(1)
 ```
-
