@@ -630,9 +630,9 @@ plot4 <- data_social_sf %>%
         axis.ticks = element_blank(),
         plot.subtitle = element_text(hjust = .5))
 
-grid.arrange(plot1, plot2, plot3, plot4, nrow = 2, ncol = 2)
+plot_arranged <- grid.arrange(plot1, plot2, plot3, plot4, nrow = 2, ncol = 2)
 
-#ggsave("./plots/plot_cluster_jahr_vergleich.png")
+ggsave("./plots/plot_cluster_jahr_vergleich.png", plot = plot_arranged)
 ```
 
 # Regressionen
