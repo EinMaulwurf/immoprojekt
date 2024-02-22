@@ -493,7 +493,8 @@ plot4 <- data_social_sf %>%
         axis.ticks = element_blank(),
         plot.subtitle = element_text(hjust = .5))
 
-ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+ggarrange(plot1, plot2, plot3, plot4, nrow = 2)
+
 
 ggsave("./plots/plot_cluster_jahr_vergleich.pdf")
 ```
@@ -807,7 +808,7 @@ plot2 <- data_social_sf %>%
         axis.ticks = element_blank(),
         plot.subtitle=element_text(hjust=0.5),
         legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
-```
+
 
 Verteilung der Kaufkraft im Jahr 2010 und 2019
 
@@ -815,34 +816,57 @@ Verteilung der Kaufkraft im Jahr 2010 und 2019
 data_social_sf <- data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
   st_as_sf()
-  
-plot1 <- data_social_sf %>%
-  filter(jahr == 2010) %>%
-  ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
-  geom_sf()+
-  scale_fill_viridis_c(trans = "log10", breaks = c(30000, 50000, 70000))+
-  labs(subtitle = "Kaufkraft pro Haushalt in €",
-       fill = element_blank())+
-  theme_bw()+
-  theme(legend.position = "top",
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5),
-        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
 
-plot2 <- data_social_sf %>%
+mittelwert_kaufkraft <- data_social %>%
+  filter(jahr == 2010) %>%
+  summarise(mittelwert_kaufkraft = median(kaufkraft_pro_haushalt, na.rm = TRUE))
+  
+plot7 <- data_social_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = cut(kaufkraft_pro_haushalt, 
+                      breaks = c(0, 20000, 30000, 50000, Inf), 
+                      labels = c("< 20000", "20000 - 30000", "30000 - 50000", "> 50000"), 
+                      drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("red", "orange", "white", "green")) +
+  labs(subtitle = "Kaufkraft pro Haushalt in € in 2010", fill = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.margin = margin(t = 0, b = -5, l = 0, r = 0)
+)
+
+plot8 <- data_social_sf %>%
   filter(jahr == 2019) %>%
-  ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
-  geom_sf()+
-  scale_fill_viridis_c(trans = "log10", breaks = c(30000, 50000, 70000))+
-  labs(subtitle = "Kaufkraft pro Haushalt in €",
-       fill = element_blank())+
-  theme_bw()+
-  theme(legend.position = "top",
-        axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5),
-        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+  ggplot(aes(fill = cut(kaufkraft_pro_haushalt, 
+                      breaks = c(0, 25000, 35000, 50000, Inf), 
+                      labels = c("< 25000", "25000 - 35000", "35000 - 50000", "> 50000"), 
+                      drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("red", "orange", "white", "green")) +
+  labs(subtitle = "Kaufkraft pro Haushalt in € in 2019", fill = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.margin = margin(t = 0, b = -5, l = 0, r = 0)
+  )
+
+
+plot_grid(plot7, plot8, labels = c('A', 'B')
+
+install.packages("cowplot")
+install.packages("ggplot2")
+
+library(ggplot2)
+library(cowplot)
 ```
 
 Verteilung nach Ausländeranteil im Jahr 2010 und 2019
@@ -878,6 +902,7 @@ plot2 <- data_social_sf %>%
 ```
 
 Verteilung nach LQ
+
 ```{r}
 data_LQ_sf <- data_social_sf %>%
   select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
@@ -888,19 +913,80 @@ data_LQ_sf <- data_social_sf %>%
          .keep = c("unused")) %>%
   ungroup()
 
+#LQ Arbeitslosenquote 2010
 
-data_LQ_sf %>%
+plot1 <- data_LQ_sf %>%
   filter(jahr == 2010) %>%
-  ggplot(aes(fill = LQ_arbeitslose, geometry = geom), linewidth = .1)+
-  geom_sf()+
-  scale_fill_viridis_c()+
-  labs(subtitle = "LQ Arbeitslose",
-       fill = element_blank())+
-  theme_bw()+
+  ggplot(aes(fill = cut(LQ_arbeitslose, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7")), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Arbeitslose 2010", fill = NULL) +
+  theme_bw() +
   theme(legend.position = "top",
         axis.text = element_blank(),
         axis.ticks = element_blank(),
-        plot.subtitle=element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust = 0.5),
         legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+#LQ Arbeitslosenquote 2019
+
+plot2 <- data_LQ_sf %>%
+  filter(jahr == 2019) %>%
+  ggplot(aes(fill = cut(LQ_arbeitslose, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Arbeitslose 2019", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot_grid(plot1, plot2, labels = c('A', 'B'))
+
+#LQ Ausländeranteil 2010
+
+plot5 <- data_LQ_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = cut(LQ_auslaender, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Ausländer 2010", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+#LQ Ausländeranteil 2019
+
+plot6 <- data_LQ_sf %>%
+  filter(jahr == 2019) %>%
+  ggplot(aes(fill = cut(LQ_auslaender, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Ausländer 2019", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot_grid(plot5, plot6, labels = c('A', 'B'))
 ```
 
