@@ -1066,7 +1066,7 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Thu, Feb 22, 2024 - 14:43:45
+    ## % Date and time: Thu, Feb 22, 2024 - 14:49:12
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1329,7 +1329,7 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Thu, Feb 22, 2024 - 14:43:50
+    ## % Date and time: Thu, Feb 22, 2024 - 14:49:17
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1559,7 +1559,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Thu, Feb 22, 2024 - 14:43:54
+    ## % Date and time: Thu, Feb 22, 2024 - 14:49:22
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1848,7 +1848,7 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Thu, Feb 22, 2024 - 14:43:58
+    ## % Date and time: Thu, Feb 22, 2024 - 14:49:26
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
