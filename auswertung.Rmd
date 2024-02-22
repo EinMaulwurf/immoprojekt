@@ -52,6 +52,7 @@ data_social <- vroom("./daten/data_social.csv")
 inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
 bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
   st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
 
 data_social_sf <- data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
@@ -233,6 +234,7 @@ set.seed(1)
 ggplot()+
   geom_sf(data = inspire_grid_berlin)+
   geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
+  geom_sf(data = mauer_berlin, color = "red", alpha = .8)+
   ggrepel::geom_label_repel(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), 
                            aes(label = Gemeinde_n, geometry = geometry),
                            stat = "sf_coordinates",
@@ -249,7 +251,7 @@ ggplot()+
   labs(x = element_blank(),
        y = element_blank())
 
-#ggsave("./plots/plot_berlin_karte.png")
+ggsave("./plots/plot_berlin_karte.png")
 ```
 
 Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von 1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir betrachten also auch teilweise Flächen, die eigentlich nicht mehr zu Berlin gehören, da wir alle Quadrate einbeziehen, die (auch nur teilweise) mit den Stadtgrenzen überlappen. Die andere Möglichkeit wäre gewesen, die Fläche zu unterschätzen und nur Quadrate zu betrachten, die komplett innerhalb der Stadtgrenzen liegen.
