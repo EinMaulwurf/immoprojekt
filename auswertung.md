@@ -17,12 +17,13 @@ library(kableExtra)
 library(vtable)
 
 # Für heteroscedasticity-consistent tests
-library(sandwich)
-library(lmtest)
+#library(sandwich)
+#library(lmtest)
 
 # Für schönere Plots
 library(ggpubr)
 library(ggrepel)
+library(gridExtra)
 
 # Für schnelleres Einlesen von Daten
 library(vroom)
@@ -31,7 +32,7 @@ library(vroom)
 library(tidyverse)
 
 # Für tidy Regressionsergebnisse
-library(broom)
+#library(broom)
 
 # Fürs Arbeiten mit Geodaten
 library(sf)
@@ -49,6 +50,7 @@ data_social <- vroom("./daten/data_social.csv")
 inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
 bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
   st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
 
 data_social_sf <- data_social %>%
   left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
@@ -360,6 +362,7 @@ set.seed(1)
 ggplot()+
   geom_sf(data = inspire_grid_berlin)+
   geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
+  geom_sf(data = mauer_berlin, color = "red", alpha = .8)+
   ggrepel::geom_label_repel(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), 
                            aes(label = Gemeinde_n, geometry = geometry),
                            stat = "sf_coordinates",
@@ -380,8 +383,10 @@ ggplot()+
 ![](auswertung_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
-#ggsave("./plots/plot_berlin_karte.png")
+ggsave("./plots/plot_berlin_karte.png")
 ```
+
+    ## Saving 5 x 3 in image
 
 Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von
 1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir
@@ -587,6 +592,105 @@ ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
 #ggsave("./plots/plot_data_social_2015.png")
 ```
 
+Die restlichen Variablen auf einer Karte für den Anhang
+
+``` r
+# anzahl_haushalte, anteil_oberklassewagen, anteil_efh, anteil_mfh, anteil_wohnblock, kreditrisiko
+
+plot1 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anzahl_haushalte, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Haushalte",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot2 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_oberklassewagen, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil Oberklassewagen",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot3 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(anteil_60_plus < 80) %>%
+  ggplot(aes(fill = anteil_efh, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil EFH",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot4 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_mfh, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil MFH",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot5 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_wohnblock, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil Wohnblock",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot6 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = kreditrisiko, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Kreditrisiko",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+arranged <- grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, ncol = 3, nrow = 2)
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+#ggsave("./plots/plot_data_social_2015_rest.png", plot = arranged)
+```
+
 # Clustering
 
 k-means clustering mit den Variablen
@@ -626,7 +730,7 @@ tibble(n_cluster = 1:max_cluster,
   labs(x = "Anzahl Cluster", y = "Total WSS")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_cluster_elbow.png")
@@ -689,7 +793,7 @@ data_social_sf %>%
   labs(fill = "Cluster")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_cluster_2015.png")
@@ -833,14 +937,16 @@ plot4 <- data_social_sf %>%
         axis.ticks = element_blank(),
         plot.subtitle = element_text(hjust = .5))
 
-ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+plot_arranged <- grid.arrange(plot1, plot2, plot3, plot4, nrow = 2, ncol = 2)
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
-#ggsave("./plots/plot_cluster_jahr_vergleich.png")
+ggsave("./plots/plot_cluster_jahr_vergleich.png", plot = plot_arranged)
 ```
+
+    ## Saving 5 x 4 in image
 
 # Regressionen
 
@@ -960,7 +1066,7 @@ stargazer(lm_miete_jahr, lm_mietbelastung_jahr,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Sun, Feb 11, 2024 - 11:23:23
+    ## % Date and time: Thu, Feb 22, 2024 - 14:43:45
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1015,7 +1121,7 @@ expand.grid(jahr = (2007:2020) - 2007) %>%
         legend.background = element_blank())
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_jahr_modell.png", width = 5, height = 2)
@@ -1059,7 +1165,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_miete_mietbelastung_jahr.png", width = 5, height = 2)
@@ -1096,7 +1202,7 @@ data_social_sf %>%
   labs(fill = "Brennpunkt?")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_brennpunkte.png", width = 5, height = 2)
@@ -1223,7 +1329,7 @@ stargazer(lm_miete_brennpunkt, lm_mietbelastung_brennpunkt,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Sun, Feb 11, 2024 - 11:23:27
+    ## % Date and time: Thu, Feb 22, 2024 - 14:43:50
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1283,7 +1389,7 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = element_blank())
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_brennpunkte_modell.png", width = 5, height = 2.5)
@@ -1324,7 +1430,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_brennpunkte.png", width = 5, height = 2)
@@ -1453,7 +1559,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Sun, Feb 11, 2024 - 11:23:31
+    ## % Date and time: Thu, Feb 22, 2024 - 14:43:54
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1523,7 +1629,7 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = "Cluster")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_cluster_modell.png", width = 5, height = 2.5)
@@ -1571,7 +1677,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_cluster.png", width = 5, height = 2)
@@ -1597,7 +1703,7 @@ data_social_sf %>%
   geom_sf(aes(fill = LQ_arbeitslose))
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 data_social_sf %>%
@@ -1606,7 +1712,7 @@ data_social_sf %>%
   geom_sf(aes(fill = arbeitslosenquote))
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-33-2.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-34-2.png)<!-- -->
 
 ``` r
 data_LQ <- data_social %>%
@@ -1742,7 +1848,7 @@ stargazer(lm_mietekalt_LQ, lm_mietbelastung_LQ,
 
     ## 
     ## % Table created by stargazer v.5.2.3 by Marek Hlavac, Social Policy Institute. E-mail: marek.hlavac at gmail.com
-    ## % Date and time: Sun, Feb 11, 2024 - 11:23:34
+    ## % Date and time: Thu, Feb 22, 2024 - 14:43:58
     ## \begin{table}[!htbp] \centering 
     ##   \caption{} 
     ##   \label{} 
@@ -1815,11 +1921,78 @@ expand.grid(jahr = (2007:2020) - 2007,
   labs(x = "Jahr", y = element_blank(), color = "LQ-Ausländer", linetype = "LQ-Arbeitslose")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_lq_modell.png", width = 5, height = 2.5)
 ```
+
+Plot Zusammenhang Miete, LQ für 2015
+
+``` r
+expand.grid(jahr = 2015 - 2007,
+            LQ_arbeitslose = seq(from = 0, to = 2, by = 0.01) %>% round(2),
+            LQ_auslaender = seq(from = 0, to = 2, by = 0.01) %>% round(2)) %>%
+  mutate(mietekalt_m2 = exp(predict(lm_mietekalt_LQ, .)),
+         mietbelastung = exp(predict(lm_mietbelastung_LQ, .)) * 100) %>%
+  ggplot(aes(x = LQ_arbeitslose, y = LQ_auslaender, fill = mietekalt_m2))+
+  geom_raster()+
+  scale_fill_viridis_c()+
+  coord_fixed()+
+  theme_bw()+
+  theme(legend.position = "top")+
+  labs(x = "LQ-Arbeitslose", y = "LQ-Ausländer")
+```
+
+![](auswertung_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+
+``` r
+data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
+         mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(LQ_arbeitslose = mean(LQ_arbeitslose),
+            LQ_auslaender = mean(LQ_auslaender),
+            mietekalt_m2 = mean(mietekalt_m2)) %>%
+  ungroup() %>%
+  ggplot(aes(x = LQ_arbeitslose, y = LQ_auslaender, color = mietekalt_m2))+
+  geom_point()+
+  scale_color_viridis_c()+
+  coord_fixed(xlim = c(0, 2), ylim = c(0, 2))+
+  theme_bw()+
+    theme(legend.position = "top")
+```
+
+    ## Warning: Removed 3 rows containing missing values (`geom_point()`).
+
+![](auswertung_files/figure-gfm/unnamed-chunk-40-2.png)<!-- -->
+
+``` r
+data_rent %>%
+  left_join(data_LQ, by = c("jahr", "r1_id")) %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = .01), 
+         mietekalt_m2 < quantile(mietekalt_m2, probs = .99)) %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(LQ_arbeitslose = mean(LQ_arbeitslose),
+            LQ_auslaender = mean(LQ_auslaender),
+            mietekalt_m2 = mean(mietekalt_m2)) %>%
+  ungroup() %>%
+  ggplot(aes(x = LQ_auslaender, y = mietekalt_m2, color = mietekalt_m2))+
+  geom_point()+
+  scale_color_viridis_c()+
+  coord_cartesian(xlim = c(0.1, 2))+
+  scale_y_continuous(trans = "log")+
+  scale_x_continuous(trans = "log")+
+  theme_bw()+
+    theme(legend.position = "top")
+```
+
+    ## Warning: Removed 3 rows containing missing values (`geom_point()`).
+
+![](auswertung_files/figure-gfm/unnamed-chunk-40-3.png)<!-- -->
 
 Wir sollten noch die Güte der Regression überprüfen, indem wir die
 Residuen betrachten.
@@ -1856,7 +2029,7 @@ tibble(model = "mietekalt_m2",
   labs(x = "Fitted", y = "Residuals")
 ```
 
-![](auswertung_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](auswertung_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ``` r
 #ggsave("./plots/plot_regression_lq.png", width = 5, height = 2)

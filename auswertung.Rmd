@@ -22,8 +22,8 @@ library(kableExtra)
 library(vtable)
 
 # Für heteroscedasticity-consistent tests
-library(sandwich)
-library(lmtest)
+#library(sandwich)
+#library(lmtest)
 
 # Für schönere Plots
 library(ggpubr)
@@ -37,11 +37,12 @@ library(vroom)
 library(tidyverse)
 
 # Für tidy Regressionsergebnisse
-library(broom)
+#library(broom)
 
 # Fürs Arbeiten mit Geodaten
 library(sf)
 ```
+
 
 # Importieren der Daten
 Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
