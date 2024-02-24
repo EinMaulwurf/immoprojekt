@@ -32,7 +32,7 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
 ```{r}
 # Filtering inspire grid to only the squares that fit over Berlin
 inspire_grid_berlin <- inspire_grid_complete %>%
-  filter(st_intersects(bezirksgrenzen_berlin %>% summarise(), inspire_grid_complete, sparse = FALSE)[1,]) %>%
+  st_filter(bezirksgrenzen_berlin) %>%
   mutate(r1_id = paste(x_sw / 1000, y_sw / 1000, sep = "_"))
 
 # Removing original data
