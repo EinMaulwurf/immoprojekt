@@ -1,0 +1,637 @@
+--------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  M:\_FDZ\RWI-GEO\RWI-GEO-RED\Dokumentation/Publish/v6/Labels_Immosco
+> ut_WM_de.txt
+  log type:  text
+ opened on:  25 Jan 2022, 23:54:06
+Variable:  (ajahr)
+Variable ajahr hat kein Valuelabel.
+
+Variable:  (amonat)
+Variable amonat hat kein Valuelabel.
+
+Variable: anbietertyp (anbieter)
+anbieter_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 Privatanbieter
+           2 Makler
+           3 Wohnungswirtschaft
+           4 Bauträger
+           5 Finanzsektor
+           6 Gewerbeanbieter
+           7 Hausbau
+           8 Umzug
+           9 unbekannt
+
+Variable:  (anzahletagen)
+Variable anzahletagen hat kein Valuelabel.
+
+Variable:  (aufzug)
+Variable aufzug hat kein Valuelabel.
+
+Variable:  (ausstattung)
+Variable ausstattung hat kein Valuelabel.
+
+Variable:  (badezimmer)
+Variable badezimmer hat kein Valuelabel.
+
+Variable:  (balkon)
+Variable balkon hat kein Valuelabel.
+
+Variable:  (baujahr)
+Variable baujahr hat kein Valuelabel.
+
+Variable:  (bauphase)
+Variable bauphase hat kein Valuelabel.
+
+Variable: Befeuerungsart 1 (bef1)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 10 (bef10)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 2 (bef2)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 3 (bef3)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 4 (bef4)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 5 (bef5)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 6 (bef6)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 7 (bef7)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 8 (bef8)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable: Befeuerungsart 9 (bef9)
+bef_de:
+         -11 anonymisiert
+         -10 Variable ist erst in zukünftigen Eingabemasken vorhanden
+          -9 Sonstiges Missing
+          -8 Variable trifft auf diesen Datensatzyp nicht zu
+          -7 keine Angabe
+          -6 Variable nicht mehr in Einagbemaske vorhanden
+          -5 unplausibler Wert geloescht
+           1 keine Information
+           2 Erdwärme
+           3 Solarenergie
+           4 Pellets
+           5 Gas
+           6 Öl
+           7 Fernwärme
+           8 Elektro
+           9 Kohle
+          10 Erdgas leicht
+          11 Erdgas schwer
+          12 Flüssiggas
+          13 Heizdampf-Fernwärme
+          14 Holz
+          15 Holzschnitzel
+          16 Koks
+          17 Nahwärme
+          19 Wärmezufuhr
+          20 Bioenergie
+          21 Windenergie
+          22 Wasserenergie
+          23 thermische Umweltenergie
+          24 kombinierte Fossilkraftstoffe
+          25 kombinierte erneuerbare Energie
+          26 kombinierte regenerative Energie
+          27 kombinierte Bio Energie
+
+Variable:  (betreut)
+Variable betreut hat kein Valuelabel.
+
+Variable:  (blid)
+Variable blid hat kein Valuelabel.
+
+Variable:  (click_customer)
+Variable click_customer hat kein Valuelabel.
+
+Variable:  (click_schnellkontakte)
+Variable click_schnellkontakte hat kein Valuelabel.
+
+Variable:  (click_url)
+Variable click_url hat kein Valuelabel.
+
+Variable:  (click_weitersagen)
+Variable click_weitersagen hat kein Valuelabel.
+
+Variable:  (courtage)
+Variable courtage hat kein Valuelabel.
+
+Variable:  (denkmalobjekt)
+Variable denkmalobjekt hat kein Valuelabel.
+
+Variable:  (dupID_gen)
+Variable dupID_gen hat kein Valuelabel.
+
+Variable:  (duplicateid)
+Variable duplicateid hat kein Valuelabel.
+
+Variable:  (einbaukueche)
+Variable einbaukueche hat kein Valuelabel.
+
+Variable:  (einliegerwohnung)
+Variable einliegerwohnung hat kein Valuelabel.
+
+Variable:  (ejahr)
+Variable ejahr hat kein Valuelabel.
+
+Variable:  (emonat)
+Variable emonat hat kein Valuelabel.
+
+Variable:  (energieausweistyp)
+Variable energieausweistyp hat kein Valuelabel.
+
+Variable:  (energieeffizienzklasse)
+Variable energieeffizienzklasse hat kein Valuelabel.
+
+Variable:  (erg_amd)
+Variable erg_amd hat kein Valuelabel.
+
+Variable:  (ergg_1km)
+Variable ergg_1km hat kein Valuelabel.
+
+Variable:  (etage)
+Variable etage hat kein Valuelabel.
+
+Variable:  (ev_kennwert)
+Variable ev_kennwert hat kein Valuelabel.
+
+Variable:  (ev_wwenthalten)
+Variable ev_wwenthalten hat kein Valuelabel.
+
+Variable:  (ferienhaus)
+Variable ferienhaus hat kein Valuelabel.
+
+Variable:  (foerderung)
+Variable foerderung hat kein Valuelabel.
+
+Variable:  (freiab)
+Variable freiab hat kein Valuelabel.
+
+Variable:  (gaestewc)
+Variable gaestewc hat kein Valuelabel.
+
+Variable:  (garten)
+Variable garten hat kein Valuelabel.
+
+Variable:  (gid2015)
+Variable gid2015 hat kein Valuelabel.
+
+Variable:  (gid2019)
+Variable gid2019 hat kein Valuelabel.
+
+Variable:  (gid_updated)
+Variable gid_updated hat kein Valuelabel.
+
+Variable:  (gkz)
+Variable gkz hat kein Valuelabel.
+
+Variable:  (grundstuecksflaeche)
+Variable grundstuecksflaeche hat kein Valuelabel.
+
+Variable:  (haustier_erlaubt)
+Variable haustier_erlaubt hat kein Valuelabel.
+
+Variable:  (heizkosten)
+Variable heizkosten hat kein Valuelabel.
+
+Variable:  (heizkosten_in_wm_enthalten)
+Variable heizkosten_in_wm_enthalten hat kein Valuelabel.
+
+Variable:  (heizungsart)
+Variable heizungsart hat kein Valuelabel.
+
+Variable:  (hits)
+Variable hits hat kein Valuelabel.
+
+Variable:  (immobilientyp)
+Variable immobilientyp hat kein Valuelabel.
+
+Variable:  (is24_stadt_kreis)
+Variable is24_stadt_kreis hat kein Valuelabel.
+
+Variable:  (kategorie_Haus)
+Variable kategorie_Haus hat kein Valuelabel.
+
+Variable:  (kategorie_Wohnung)
+Variable kategorie_Wohnung hat kein Valuelabel.
+
+Variable:  (kaufpreis)
+Variable kaufpreis hat kein Valuelabel.
+
+Variable:  (kaufvermietet)
+Variable kaufvermietet hat kein Valuelabel.
+
+Variable:  (keller)
+Variable keller hat kein Valuelabel.
+
+Variable:  (kid2015)
+Variable kid2015 hat kein Valuelabel.
+
+Variable:  (kid2019)
+Variable kid2019 hat kein Valuelabel.
+
+Variable:  (kid_updated)
+Variable kid_updated hat kein Valuelabel.
+
+Variable:  (lat_gps)
+Variable lat_gps hat kein Valuelabel.
+
+Variable:  (lat_utm)
+Variable lat_utm hat kein Valuelabel.
+
+Variable:  (laufzeittage)
+Variable laufzeittage hat kein Valuelabel.
+
+Variable:  (letzte_modernisierung)
+Variable letzte_modernisierung hat kein Valuelabel.
+
+Variable:  (lieferung)
+Variable lieferung hat kein Valuelabel.
+
+Variable:  (lon_gps)
+Variable lon_gps hat kein Valuelabel.
+
+Variable:  (lon_utm)
+Variable lon_utm hat kein Valuelabel.
+
+Variable:  (merge_gid)
+Variable merge_gid hat kein Valuelabel.
+
+Variable:  (mieteinnahmenpromonat)
+Variable mieteinnahmenpromonat hat kein Valuelabel.
+
+Variable:  (mietekalt)
+Variable mietekalt hat kein Valuelabel.
+
+Variable:  (mietekaution)
+Variable mietekaution hat kein Valuelabel.
+
+Variable:  (mietewarm)
+Variable mietewarm hat kein Valuelabel.
+
+Variable:  (nebenkosten)
+Variable nebenkosten hat kein Valuelabel.
+
+Variable:  (nebenraeume)
+Variable nebenraeume hat kein Valuelabel.
+
+Variable:  (nutzflaeche)
+Variable nutzflaeche hat kein Valuelabel.
+
+Variable:  (obid)
+Variable obid hat kein Valuelabel.
+
+Variable:  (objektzustand)
+Variable objektzustand hat kein Valuelabel.
+
+Variable:  (parkplatz)
+Variable parkplatz hat kein Valuelabel.
+
+Variable:  (parkplatzpreis)
+Variable parkplatzpreis hat kein Valuelabel.
+
+Variable:  (plz)
+Variable plz hat kein Valuelabel.
+
+Variable:  (rollstuhlgerecht)
+Variable rollstuhlgerecht hat kein Valuelabel.
+
+Variable:  (schlafzimmer)
+Variable schlafzimmer hat kein Valuelabel.
+
+Variable:  (spell)
+Variable spell hat kein Valuelabel.
+
+Variable:  (uniqueID_gen)
+Variable uniqueID_gen hat kein Valuelabel.
+
+Variable:  (wohnflaeche)
+Variable wohnflaeche hat kein Valuelabel.
+
+Variable:  (wohngeld)
+Variable wohngeld hat kein Valuelabel.
+
+Variable:  (zimmeranzahl)
+Variable zimmeranzahl hat kein Valuelabel.
+
+      name:  <unnamed>
+       log:  M:\_FDZ\RWI-GEO\RWI-GEO-RED\Dokumentation/Publish/v6/Labels_Immosco
+> ut_WM_de.txt
+  log type:  text
+ closed on:  25 Jan 2022, 23:54:06
+--------------------------------------------------------------------------------
