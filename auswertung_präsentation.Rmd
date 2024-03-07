@@ -246,7 +246,7 @@ summary(lm_mietbelastung_jahr)
 Stargazer Tabelle
 ```{r}
 stargazer(lm_miete_jahr, lm_mietbelastung_jahr, 
-          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
+          dep.var.labels = c("log Kaltmiete", "log Mietbelastung"), 
           covariate.labels = c("Konstante", "Jahr"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           intercept.bottom = FALSE,
@@ -294,7 +294,7 @@ summary(lm_mietbelastung_cluster)
 Stargazer Tabelle
 ```{r}
 stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
-          dep.var.labels = c("log Kaltmiete (€/m\\textsuperscript{2})", "log Mietbelastung (\\%)"), 
+          dep.var.labels = c("log Kaltmiete", "log Mietbelastung"), 
           covariate.labels = c("Konstante", "Jahr", "Cluster2", "Cluster3", "Cluster4", "Jahr*Cluster2", "Jahr*Cluster3", "Jahr*Cluster4"),
           omit.stat = c("ser", "f"), single.row = FALSE, 
           intercept.bottom = FALSE,
@@ -304,7 +304,7 @@ stargazer(lm_miete_cluster, lm_mietbelastung_cluster,
 ```
 
 Plot des Regressionsmodells
-```{r fig.width=5, fig.height=2.5, warning=FALSE}
+```{r fig.width=4, fig.height=2.5, warning=FALSE}
 
 facet_names <- list(
   'mietekalt_m2'="Miete (€/m²)",
@@ -334,5 +334,25 @@ expand.grid(jahr = (2007:2020) - 2007,
   theme(legend.position = "top")+
   labs(x = "Jahr", y = element_blank(), color = "Cluster")
 
-#ggsave("./plots_präsentation/plot_regression_cluster_modell.png", width = 5, height = 2.5)
+#ggsave("./plots_präsentation/plot_regression_cluster_modell.png", width = 4, height = 2.5)
 ```
+
+# Workflow Beispiel
+Regressionstabelle
+```{r, warning = FALSE}
+data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  mutate(jahr = jahr - 2007) %>%
+  lm(log(mietekalt_m2) ~ jahr, data = .) %>%
+  stargazer(
+    dep.var.labels = c("log Kaltmiete"),
+    covariate.labels = c("Konstante", "Jahr"),
+    omit.stat = c("ser", "f"), single.row = FALSE,
+    intercept.bottom = FALSE,
+    no.space = TRUE,
+    dep.var.caption = "\\textit{Abhängige Variable}",
+    notes.label = "\\textit{Anmerkung:}",
+    title = "Regression"
+  )
+```
+
