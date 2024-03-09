@@ -33,6 +33,12 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
   st_transform("EPSG:3035")
 ```
 
+> nrow(data_rent_complete)
+[1] 2000510
+
+> nrow(data_social_complete)
+[1] 2399151
+
 ```{r}
 # Filtering inspire grid to only the squares that fit over Berlin
 inspire_grid_berlin <- inspire_grid_complete %>%
