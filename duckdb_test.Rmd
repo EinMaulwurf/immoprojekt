@@ -1,0 +1,74 @@
+---
+title: "tidymodels.Rmd"
+output: "html"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+# Libraries
+```{r message=FALSE}
+# Für schnelleres Einlesen von Daten
+library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
+library(tidyverse)
+library(tidymodels)
+
+# Fürs Arbeiten mit Geodaten
+library(sf)
+
+#
+library(duckdb)
+library(duckplyr)
+```
+
+
+# Importieren der Daten
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
+```{r}
+con <- dbConnect(duckdb::duckdb(dbdir = "./daten/database.duckdb"))
+
+duckdb_read_csv(con, name = "data_rent", files = "./daten/data_rent.csv")
+```
+
+```{r}
+data_rent_test <- read_csv("./daten/data_rent.csv")
+```
+
+
+```{r}
+tbl(con, "data_rent") %>%
+  group_by(jahr, r1_id) %>%
+  summarise(mietekalt_m2 = mean(mietekalt/wohnflaeche, na.rm = FALSE),
+            n = n()) %>%
+  filter(n > 10) %>%
+  arrange(desc(mietekalt_m2))
+```
+
+```{r}
+library(microbenchmark)
+
+f_normal <- function() {
+  data_rent_test %>%
+  group_by(jahr, r1_id) %>%
+  summarise(mietekalt_m2 = mean(mietekalt/wohnflaeche, na.rm = FALSE),
+            n = n()) %>%
+  filter(n > 10) %>%
+  arrange(desc(mietekalt_m2))
+}
+
+f_duckdb <- function() {
+  tbl(con, "data_rent") %>%
+  group_by(jahr, r1_id) %>%
+  summarise(mietekalt_m2 = mean(mietekalt/wohnflaeche, na.rm = FALSE),
+            n = n()) %>%
+  filter(n > 10) %>%
+  arrange(desc(mietekalt_m2))
+}
+
+mbm <- microbenchmark(f_normal, f_duckdb)
+autoplot(mbm)
+```
+

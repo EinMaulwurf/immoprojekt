@@ -1,0 +1,201 @@
+---
+title: "Quantilsregression"
+output: 
+  #- github_document
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+# Libraries
+```{r message=FALSE}
+# Für schnelleres Einlesen von Daten
+library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
+library(tidyverse)
+library(broom)
+
+# Fürs Arbeiten mit Geodaten
+library(sf)
+
+# Quantilsregression
+library(quantreg)
+library(marginaleffects)
+```
+
+
+# Importieren der Daten
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
+```{r, message=FALSE}
+data_rent <- vroom("./daten/data_rent.csv")
+data_social <- vroom("./daten/data_social.csv")
+
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
+  st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
+  janitor::clean_names() %>%
+  mutate(datum = ym(monat), .keep = "unused") %>%
+  rename(wert = originalwerte,
+         wert_trend = 2)
+```
+
+# Regression
+## Miete Jahr
+Linear Regression
+```{r}
+data_miete_jahr <- data_rent %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  slice_sample(prop = 0.01) %>%
+  #filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), 
+  #       mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007)
+
+lm_miete_jahr <- lm(log(mietekalt_m2) ~ jahr, data = data_miete_jahr)
+
+summary(lm_miete_jahr)
+```
+
+```{r}
+rq_miete_jahr <- rq(log(mietekalt_m2) ~ jahr, tau = seq(from = 0.05, to = 0.95, by = 0.05), 
+                    data = data_miete_jahr, method = "fn")
+
+summary(rq_miete_jahr)[10]
+```
+
+```{r}
+rq_miete_jahr_tidy <- tidy(rq_miete_jahr, conf.int = TRUE, conf.level = 0.95)
+lm_miete_jahr_tiy <- tidy(lm_miete_jahr, conf.int = TRUE, conf.level = 0.95)
+
+rq_miete_jahr_tidy %>%
+  mutate(estimate_trans = if_else(term == "jahr", exp(estimate)-1, exp(estimate))) %>%
+  mutate(conf_low_trans = if_else(term == "jahr", exp(conf.low)-1, exp(conf.low))) %>%
+  mutate(conf_high_trans = if_else(term == "jahr", exp(conf.high)-1, exp(conf.high))) %>%
+  filter(term == "jahr") %>%
+  ggplot()+
+  geom_ribbon(aes(x = tau, ymin = conf_low_trans, ymax = conf_high_trans), alpha = .5)+
+  geom_line(aes(x = tau, y = estimate_trans))+
+  geom_hline(aes(yintercept = exp(lm_miete_jahr_tiy$estimate[2])-1))+
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = 0.1))+
+  scale_y_continuous(labels = scales::label_percent())+
+  theme_bw()+
+  labs(x = "Quantil",
+       y = "Steigerung pro Jahr")
+```
+
+
+```{r}
+data_miete_jahr %>%
+  ggplot(aes(x = jahr, y = mietekalt_m2))+
+  geom_jitter(alpha = .05, size = .5,
+              position = position_jitter(width = .5, height = 0))+
+  scale_y_continuous()+
+  coord_cartesian(ylim = c(0, 30))+
+  geom_smooth(method = "lm", se = FALSE, formula = y ~ x, color = "blue")+
+  geom_quantile(formula = y ~ x, quantiles = .5, color = "red")+
+  geom_quantile(formula = y ~ x, quantiles = c(0.1, 0.9), color = "red", linetype = "dashed")+
+  theme_bw()
+```
+
+
+## Brennpunkte
+```{r}
+data_miete_brennpunkt <- data_social %>%
+  filter(jahr == 2015) %>%
+  filter(!is.na(arbeitslosenquote), !is.na(kaufkraft_pro_haushalt)) %>%
+  mutate(ist_brennpunkt = ifelse(arbeitslosenquote > 10 & 
+                                   kaufkraft_pro_haushalt < quantile(kaufkraft_pro_haushalt, .2),
+                                 TRUE, FALSE)) %>%
+  select(r1_id, ist_brennpunkt) %>%
+  right_join(data_rent, by = "r1_id") %>%
+  filter(!is.na(ist_brennpunkt)) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(!is.na(mietekalt_m2)) %>%
+  #filter(mietekalt_m2 < quantile(mietekalt_m2, 0.99), 
+  #       mietekalt_m2 > quantile(mietekalt_m2, 0.01)) %>%
+  mutate(jahr = jahr - 2007) %>%
+  slice_sample(prop = 0.01)
+
+lm_miete_brennpunkt <- lm(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr, 
+                          data = data_miete_brennpunkt)
+
+summary(lm_miete_brennpunkt)
+```
+
+```{r}
+rq_miete_brennpunkt <- rq(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr,
+                          tau = seq(from = 0.05, to = 0.95, by = 0.05), 
+                          data = data_miete_brennpunkt, method = "fn")
+
+summary(rq_miete_brennpunkt)[10]
+```
+
+```{r}
+lm_miete_brennpunkt_tidy <- tidy(lm_miete_brennpunkt, conf.int = TRUE, conf.level = 0.95)
+rq_miete_brennpunkt_tidy <- tidy(rq_miete_brennpunkt, conf.int = TRUE, conf.level = 0.95)
+
+rq_miete_brennpunkt_tidy %>%
+  mutate(estimate_trans = if_else(term == "jahr", exp(estimate)-1, exp(estimate))) %>%
+  mutate(conf_low_trans = if_else(term == "jahr", exp(conf.low)-1, exp(conf.low))) %>%
+  mutate(conf_high_trans = if_else(term == "jahr", exp(conf.high)-1, exp(conf.high))) %>%
+  filter(term == "jahr") %>%
+  ggplot()+
+  geom_ribbon(aes(x = tau, ymin = conf_low_trans, ymax = conf_high_trans), alpha = .5)+
+  geom_line(aes(x = tau, y = estimate_trans))+
+  geom_hline(aes(yintercept = exp(lm_miete_brennpunkt_tidy$estimate[2])-1))+
+  scale_x_continuous(breaks = seq(from = 0, to = 1, by = 0.1))+
+  scale_y_continuous(labels = scales::label_percent())+
+  theme_bw()+
+  labs(x = "Quantil",
+       y = "Steigerung pro Jahr")
+```
+
+```{r}
+summary(rq_miete_brennpunkt) %>%
+  plot(c("ist_brennpunktTRUE"))
+```
+
+
+
+```{r}
+data_miete_brennpunkt
+
+test <- map(.x = seq(from = 0.1, to = 0.9, by = 0.2),
+    .f = ~ rq(log(mietekalt_m2) ~ jahr + ist_brennpunkt + ist_brennpunkt:jahr,
+                          tau = .x, 
+                          data = data_miete_brennpunkt, method = "fn"))
+
+test_pred <- map(
+  .x = test,
+  .f = ~ expand_grid(jahr = 0:20, ist_brennpunkt = c(TRUE, FALSE)) %>%
+    modelr::add_predictions(model = .x, var = "mietekalt_m2_pred") %>%
+    mutate(
+      mietekalt_m2_pred = exp(mietekalt_m2_pred),
+      tau = .x$tau
+    )
+) %>%
+  list_rbind() %>%
+  mutate(tau = factor(tau) %>% fct_inorder())
+
+test_pred %>%
+  #filter(ist_brennpunkt) %>%
+  ggplot(aes(x = jahr, y = mietekalt_m2_pred, color = tau, linetype = ist_brennpunkt))+
+  geom_line()+
+  theme_bw()+
+  theme(legend.position = "top")
+```
+

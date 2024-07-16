@@ -1,0 +1,134 @@
+---
+title: "tidymodels.Rmd"
+output: "html"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+# Libraries
+```{r message=FALSE}
+# Für schnelleres Einlesen von Daten
+library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
+library(tidyverse)
+library(tidymodels)
+
+# Fürs Arbeiten mit Geodaten
+library(sf)
+```
+
+
+# Importieren der Daten
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
+```{r, message=FALSE}
+data_rent <- vroom("./daten/data_rent.csv")
+data_rent_complete <-
+  vroom("./daten/Datensatz_Berlin_Rent_new.csv") %>%
+  select(
+    mietekalt,
+    mietewarm,
+    nebenkosten,
+    heizkosten,
+    baujahr,
+    letzte_modernisierung,
+    wohnflaeche,
+    etage,
+    anzahletagen,
+    zimmeranzahl,
+    laufzeittage,
+    hits,
+    ajahr,
+    amonat,
+    aufzug,
+    balkon,
+    r1_id
+  ) %>%
+  mutate(across(where(is.character) & !r1_id, ~ as.numeric(.)))
+data_social <- vroom("./daten/data_social.csv")
+
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
+  st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
+  janitor::clean_names() %>%
+  mutate(datum = ym(monat), .keep = "unused") %>%
+  rename(wert = originalwerte,
+         wert_trend = 2)
+```
+
+
+# Test
+Hits vs Laufzeit
+```{r}
+data_rent_complete %>%
+  select(laufzeittage, hits) %>%
+  slice_sample(n = 10000) %>%
+  filter(hits > 0, laufzeittage > 0) %>%
+  ggplot(aes(x = laufzeittage, y = hits))+
+  geom_point(alpha = .2, size = .3)+
+  scale_x_log10()+
+  scale_y_log10()
+```
+
+Heizkosten und Baujahr
+```{r}
+data_rent_complete %>%
+  select(mietekalt, mietewarm, heizkosten, baujahr, wohnflaeche) %>%
+  slice_head(n = 10000) %>%
+  mutate(mietewarm = as.numeric(mietewarm),
+         heizkosten = as.numeric(heizkosten),
+         baujahr = as.numeric(baujahr)) %>%
+  drop_na() %>%
+  ggplot(aes(x = heizkosten, y = baujahr))+
+  geom_point(alpha = .3)
+```
+
+```{r}
+data_rent_complete %>%
+  mutate(across(where(is.character) & !r1_id, ~ as.numeric(.))) %>%
+  mutate(eff_baujahr = pmax(baujahr, letzte_modernisierung)) %>%
+  slice_sample(n = 10000) %>%
+  ggplot(aes(x = eff_baujahr, y = mietekalt))+
+  geom_point(alpha = .3)+
+  coord_cartesian(xlim = c(1970, 2025))+
+  scale_y_log10()
+```
+
+
+```{r}
+data_rent_split <- data_rent_complete %>%
+  select(mietekalt, heizkosten, baujahr, letzte_modernisierung, wohnflaeche, etage, anzahletagen, zimmeranzahl, laufzeittage, ajahr) %>%
+  drop_na() %>%
+  initial_split(prop = 3/4)
+
+data_rent_train <- training(data_rent_split)
+data_rent_test <- testing(data_rent_split)
+```
+
+```{r}
+data_rent_rec <- recipe(mietekalt ~ ., data = data_rent_train)
+
+data_rent_mod <- linear_reg()
+
+data_rent_fit <- workflow() %>% 
+  add_model(data_rent_mod) %>% 
+  add_recipe(data_rent_rec) %>%
+  fit(data = data_rent_train)
+```
+
+```{r}
+data_rent_fit %>%
+  broom::tidy()
+```
+
+
+
