@@ -1,19 +1,16 @@
 ---
-title: "cleaning.Rmd"
-output:
-  html_document:
-    toc: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: false
+title: "Datenbereinigung"
+
+format: 
+   html:
+     df-print: paged
+     fig-width: 5
+     fig-height: 3
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 # Libraries
-```{r message=FALSE}
+```{r message=FALSE, eval=FALSE, include=TRUE}
 library(vroom)
 library(tidyverse)
 library(sf)
@@ -21,7 +18,7 @@ library(sf)
 
 # Importing and cleaning data
 **ATTENTION:** If this project was cloned from GitHub, the `INSPIRE_Grid` folder must be downloaded from the source below and placed into the right directory. The files were too large for GitHub.
-```{r}
+```{r, eval=FALSE, include=TRUE}
 data_rent_complete <- vroom("./daten/Datensatz_Berlin_Rent_new.csv")
 data_social_complete <- vroom("./daten/Datensatz_Berlin_Social_new.csv", locale = locale(grouping_mark = ".", decimal_mark = ",", encoding = "UTF-8"))
 
@@ -33,7 +30,7 @@ bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.s
   st_transform("EPSG:3035")
 ```
 
-```{r}
+```{r, eval=FALSE, include=TRUE}
 # Filtering inspire grid to only the squares that fit over Berlin
 inspire_grid_berlin <- inspire_grid_complete %>%
   st_filter(bezirksgrenzen_berlin) %>%
@@ -56,7 +53,7 @@ r1_ids <- inspire_grid_berlin %>%
   unique()
 ```
 
-```{r}
+```{r, eval=FALSE, include=TRUE}
 # Filtering data_rent
 data_rent <- data_rent_complete %>%
   select(r1_id, mietekalt, wohnflaeche, jahr) %>%
@@ -72,7 +69,7 @@ rm(data_rent_complete)
 head(data_rent)
 ```
 
-```{r}
+```{r, eval=FALSE, include=TRUE}
 # Filtering data_social
 # Renaming and adding variables
 data_social <- data_social_complete %>%
@@ -99,7 +96,7 @@ rm(data_social_complete)
 head(data_social)
 ```
 
-```{r}
+```{r, eval=FALSE, include=TRUE}
 # Saving cleaned data
 #write_csv(data_rent, "./daten/data_rent.csv")
 #write_csv(data_social, "./daten/data_social.csv")

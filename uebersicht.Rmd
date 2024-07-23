@@ -1,0 +1,16 @@
+---
+title: "Übersicht"
+
+
+format: 
+   html:
+     df-print: paged
+     fig-width: 5
+     fig-height: 3
+---
+
+**Projekt Immobilienmarkt WiSe 23/24**
+
+**Das fertige Paper kann über diesen Button heruntergeladen werden:**
+
+{{< downloadthis Projekt_Immobilienmarkt.pdf >}}
