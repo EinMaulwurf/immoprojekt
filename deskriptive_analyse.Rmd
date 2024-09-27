@@ -1,0 +1,667 @@
+---
+title: "auswertung.Rmd"
+output: 
+  #- github_document
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+# Libraries
+```{r message=FALSE}
+# Für schönere Plots
+library(ggpubr)
+library(ggrepel)
+library(gridExtra)
+library(cowplot)
+
+# Für schnelleres Einlesen von Daten
+library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
+library(tidyverse)
+
+# Fürs Arbeiten mit Geodaten
+library(sf)
+```
+
+
+# Importieren der Daten
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
+```{r, message=FALSE}
+data_rent <- vroom("./daten/data_rent.csv")
+data_social <- vroom("./daten/data_social.csv")
+
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
+  st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+baugenehmigungen <- read_csv2("./daten/genehmigte-wohnungen-monat.csv") %>%
+  janitor::clean_names() %>%
+  mutate(datum = ym(monat), .keep = "unused") %>%
+  rename(wert = originalwerte,
+         wert_trend = 2)
+```
+
+
+# Summary Statistics
+Überblick über die beiden Datensätze mit Anzahl an Beobachtungen, Mittelwert, Median, Quartilen und mehr.
+```{r}
+# Data Social
+data_social %>% select(-jahr, -r1_id) %>%
+  mutate(kaufkraft_pro_haushalt_1000 = kaufkraft_pro_haushalt / 1000,
+         anzahl_haushalte_1000 = anzahl_haushalte / 1000) %>%
+  select(-kaufkraft_pro_haushalt, -anzahl_haushalte) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+
+# Data Rent
+# Allgemein
+data_rent %>% select(-jahr, -r1_id) %>%
+  pivot_longer(cols = everything()) %>%
+  group_by(name) %>%
+  drop_na() %>%
+  summarise(n = n(), 
+            mean = mean(value),
+            Std.Dev. = sd(value),
+            min = min(value),
+            Pctl.25 = quantile(value, probs = 0.25),
+            Pctl.50 = quantile(value, probs = 0.5),
+            Pctl.75 = quantile(value, probs = 0.75),
+            max = max(value)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>%
+  cat()
+
+# Nach Jahren
+data_rent %>% select(-r1_id) %>%
+  group_by(jahr) %>%
+  summarise(n = n(),
+            mietekalt_mean = mean(mietekalt),
+            mietekalt_median = median(mietekalt),
+            wohnflaeche_mean = mean(wohnflaeche),
+            wohnflaeche_median = median(wohnflaeche),
+            mietekalt_m2_mean = mean(mietekalt_m2),
+            mietekalt_m2_median = median(mietekalt_m2)) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+```
+
+Korrelation zwischen Variablen
+```{r}
+mcor_social <- data_social %>%
+  select_if(is.numeric) %>%
+  select(-jahr) %>%
+  as.matrix() %>%
+  Hmisc::rcorr() %>%
+  .$r
+mcor_social[upper.tri(mcor_social)] <- NA
+
+mcor_social %>%
+  data.frame() %>%
+  round(2) %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = "",
+  ) %>%
+  cat()
+```
+
+Problem mit Ausländeranteil in Data Social
+```{r}
+auslaender_berlin_destatis <- read_csv2("./daten/auslaenderanteil.csv") %>%
+  janitor::clean_names() %>%
+  select(zeit, x2_auspraegung_label, x3_auspraegung_label, x4_auspraegung_label, bevstd_bevoelkerungsstand_anzahl) %>%
+  filter(x2_auspraegung_label == "Insgesamt",
+         x3_auspraegung_label %in% c("Ausl\xe4nder", "Insgesamt"),
+         x4_auspraegung_label == "Insgesamt") %>%
+  select(-x2_auspraegung_label, -x4_auspraegung_label) %>%
+  mutate(datum = dmy(zeit),
+         jahr = year(datum)+1) %>%
+  select(-zeit, -datum) %>%
+  filter(jahr %in% (data_social %>% distinct(jahr) %>% pull(jahr))) %>%
+  mutate(x3_auspraegung_label = case_when(x3_auspraegung_label == "Ausl\xe4nder" ~ "Auslaender",
+                                          TRUE ~ x3_auspraegung_label)) %>%
+  pivot_wider(names_from = x3_auspraegung_label, values_from = bevstd_bevoelkerungsstand_anzahl) %>%
+  mutate(anteil_auslaender_destatis = (Auslaender / Insgesamt) * 100) %>%
+  select(jahr, anteil_auslaender_destatis)
+
+data_social %>%
+  select(arbeitslosenquote, anteil_auslaender, anzahl_haushalte, jahr) %>%
+  drop_na() %>%
+  group_by(jahr) %>%
+  summarise(mean_anteil_auslaender = mean(anteil_auslaender),
+            mean_anteil_auslaender_weighted = weighted.mean(anteil_auslaender, anzahl_haushalte)) %>%
+  left_join(auslaender_berlin_destatis, by = "jahr") %>%
+  kbl(
+    format = "latex",
+    digits = 2,
+    booktabs = T,
+    toprule = "\\hline \\hline",
+    midrule = "\\hline",
+    bottomrule = "\\hline \\hline",
+    linesep = c("", "", "", "\\addlinespace"),
+  ) %>%
+  cat()
+```
+
+
+# Plotting
+## Baugenehmigungen
+```{r fig.width=5, fig.height=2}
+baugenehmigungen %>%
+  ggplot(aes(x = datum))+
+  geom_line(aes(y = wert), color = "darkgrey")+
+  geom_line(aes(y = wert_trend), color = "black", linewidth = 1)+
+  scale_x_date(date_breaks = "2 years", date_labels = "%Y")+
+  theme_bw()+
+  labs(x = "Jahr",
+       y = "Anzahl in 1000")
+
+#ggsave("./plots/plot_baugenehmigungen.png")
+```
+
+## Berlin Karte
+Der INSPIRE Grid mit den Berliner Bezirken
+```{r}
+set.seed(1)
+
+ggplot()+
+  geom_sf(data = inspire_grid_berlin)+
+  geom_sf(data = bezirksgrenzen_berlin, fill = "white", alpha = .8, color = "black")+
+  geom_sf(data = mauer_berlin, color = "red", alpha = .8)+
+  ggrepel::geom_label_repel(data = bezirksgrenzen_berlin %>% mutate(Gemeinde_n = str_replace(Gemeinde_n, "-", "-\n")), 
+                           aes(label = Gemeinde_n, geometry = geometry),
+                           stat = "sf_coordinates",
+                           min.segment.length = 0.2, 
+                           force_pull = 50,
+                           box.padding = 0.1,
+                           label.padding = .1,
+                           size = 2,
+                           label.r = 0,
+                           lineheight = 1,
+                           fill = "white")+
+  coord_sf(crs = 3035)+
+  theme_bw()+
+  labs(x = element_blank(),
+       y = element_blank())
+
+#ggsave("./plots/plot_berlin_karte.png")
+```
+
+Der hier gezeigt Teil des Grids hat 1016 Quadrate, also eine Fläche von 1016km². Berlin hat genaugenommen nur eine Fläche von 891,8 km², wir betrachten also auch teilweise Flächen, die eigentlich nicht mehr zu Berlin gehören, da wir alle Quadrate einbeziehen, die (auch nur teilweise) mit den Stadtgrenzen überlappen. Die andere Möglichkeit wäre gewesen, die Fläche zu unterschätzen und nur Quadrate zu betrachten, die komplett innerhalb der Stadtgrenzen liegen.
+
+## Rent Daten
+Wie hat sich die Verteilung der Kaltmieten über die Jahre geändert?
+```{r, fig.width=5, fig.height=3}
+plot1 <- data_rent %>%
+  filter(jahr %in% 2010:2020) %>%
+  mutate(mietekalt_m2 = mietekalt / wohnflaeche) %>%
+  filter(mietekalt_m2 > 0, mietekalt_m2 < 100) %>%
+  ggplot(aes(x = jahr, y = mietekalt_m2, group = jahr))+
+  geom_boxplot(outlier.shape = NA)+
+  coord_cartesian(ylim = c(0, 30))+
+  scale_x_continuous(breaks = 2010:2020, labels = 10:20)+
+  scale_y_continuous(breaks = seq(from = 0, to = 30, by = 5))+
+  theme_bw()+
+  labs(x = "Jahr", y = "Kaltmiete (€/m²)")
+
+plot2 <- data_rent %>%
+  filter(jahr == 2010) %>%
+  filter(mietekalt > 50, mietekalt < 10000) %>%
+  ggplot(aes(x = mietekalt, y = after_stat(density))) +
+  geom_histogram(binwidth = 20) +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
+  scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
+  coord_cartesian(xlim = c(0, 2000)) +
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
+  theme_bw() +
+  theme(legend.position = c(0.75, 0.75), legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2010", y = "Dichte (%)")
+
+plot3 <- data_rent %>%
+  filter(jahr == 2020) %>%
+  filter(mietekalt > 50, mietekalt < 10000) %>%
+  ggplot(aes(x = mietekalt, y = after_stat(density))) +
+  geom_histogram(binwidth = 20) +
+  geom_vline(aes(xintercept = mean(mietekalt), color = "Mean"), linewidth = .6, linetype = "dashed") +
+  geom_vline(aes(xintercept = median(mietekalt), color = "Median"), linewidth = .6, linetype = "dashed") +
+  scale_color_manual("Statistics", values = c("Mean" = "red", "Median" = "blue"))+
+  coord_cartesian(xlim = c(0, 2000)) +
+  scale_y_continuous(labels = scales::label_number(accuracy = .01, scale = 100))+
+  theme_bw() +
+  theme(legend.position = "none", legend.title = element_blank(), legend.background = element_blank())+
+  labs(x = "Kaltmiete (€/m²) in 2020", y = "Dichte (%)")
+
+ggarrange(plot1,
+          ggarrange(plot2, plot3, nrow = 2),
+          nrow = 1)
+
+#ggsave("./plots/plot_miete.png", width = 5, height = 3)
+```
+
+Mittlere Kaltmiete auf Karte
+```{r, fig.width=7.5, fig.height=2.5}
+data_rent_sf <- data_rent %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+data_rent_sf_plot <- data_rent_sf %>%
+  filter(jahr == 2015) %>%
+  group_by(r1_id) %>%
+  summarise(mietekalt = mean(mietekalt),
+            wohnflaeche = mean(wohnflaeche),
+            mietekalt_m2 = mean(mietekalt_m2))
+
+plot1 <- data_rent_sf_plot %>%
+  filter(mietekalt > quantile(mietekalt, probs = 0.01), mietekalt < quantile(mietekalt, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = mietekalt))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(400, 600, 900, 1300))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
+  labs(fill = element_blank(),
+       subtitle = "Kaltmiete (€)")
+
+plot2 <- data_rent_sf_plot %>%
+  filter(wohnflaeche > quantile(wohnflaeche, probs = 0.01), wohnflaeche < quantile(wohnflaeche, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = wohnflaeche))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(50, 70, 100, 130))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
+  labs(fill = element_blank(),
+       subtitle = "Wohnfläche (m²)")
+
+plot3 <- data_rent_sf_plot %>%
+  filter(mietekalt_m2 > quantile(mietekalt_m2, probs = 0.01), mietekalt_m2 < quantile(mietekalt_m2, probs = 0.99)) %>%
+  ggplot()+
+  geom_sf(aes(fill = mietekalt_m2))+
+  scale_fill_viridis_c(trans = "log10", breaks = c(6, 8, 10, 12, 14))+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        plot.subtitle = element_text(hjust = .5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))+
+  labs(fill = element_blank(),
+       subtitle = "Kaltmiete (€/m²)")
+
+ggarrange(plot1, plot2, plot3, nrow = 1)
+
+#rm(data_rent_sf_plot)
+
+#ggsave("./plots/plot_miete_karte_2015.png", width = 7.5, height = 2.5)
+```
+
+
+## Social Daten
+Wie sehen ausgewählte Social-Variablen auf einer Karte aus?
+```{r, fig.width=7.5, fig.height=2.5}
+# arbeitslosenquote, kaufkraft_pro_haushalt, anteil_60_plus, anteil_auslaender
+  
+plot1 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = arbeitslosenquote, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Arbeitslosenquote",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot2 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = kaufkraft_pro_haushalt, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c(trans = "log10", breaks = c(30000, 50000, 70000))+
+  labs(subtitle = "Kaufkraft",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot3 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(anteil_60_plus < 80) %>%
+  ggplot(aes(fill = anteil_60_plus, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil 60+",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot4 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_auslaender, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Ausländeranteil",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+ggarrange(plot1, plot2, plot3, plot4, nrow = 1)
+
+#ggsave("./plots/plot_data_social_2015.png")
+```
+
+Die restlichen Variablen auf einer Karte für den Anhang
+```{r, fig.width=7.5, fig.height=5}
+# anzahl_haushalte, anteil_oberklassewagen, anteil_efh, anteil_mfh, anteil_wohnblock, kreditrisiko
+
+plot1 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anzahl_haushalte, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Haushalte",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot2 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_oberklassewagen, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil Oberklassewagen",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot3 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  filter(anteil_60_plus < 80) %>%
+  ggplot(aes(fill = anteil_efh, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil EFH",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot4 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_mfh, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil MFH",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot5 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = anteil_wohnblock, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Anteil Wohnblock",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot6 <- data_social_sf %>%
+  filter(jahr == 2015) %>%
+  ggplot(aes(fill = kreditrisiko, geometry = geom), linewidth = .1)+
+  geom_sf()+
+  scale_fill_viridis_c()+
+  labs(subtitle = "Kreditrisiko",
+       fill = element_blank())+
+  theme_bw()+
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle=element_text(hjust=0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+arranged <- grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, ncol = 3, nrow = 2)
+
+#ggsave("./plots/plot_data_social_2015_rest.png", plot = arranged)
+```
+
+## Konzentration von Bevölkerungsgruppen (Pascal)
+### Verteilung der Kaufkraft im Jahr 2010 und 2019
+```{r fig.width=10, fig.height=2.5}
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+mittelwert_kaufkraft <- data_social %>%
+  filter(jahr == 2010) %>%
+  summarise(mittelwert_kaufkraft = median(kaufkraft_pro_haushalt, na.rm = TRUE))
+  
+plot7 <- data_social_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = cut(kaufkraft_pro_haushalt, 
+                      breaks = c(0, 20000, 30000, 50000, Inf), 
+                      labels = c("< 20000", "20000 - 30000", "30000 - 50000", "> 50000"), 
+                      drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("red", "orange", "white", "green")) +
+  labs(subtitle = "Kaufkraft pro Haushalt in € in 2010", fill = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.margin = margin(t = 0, b = -5, l = 0, r = 0)
+)
+
+plot8 <- data_social_sf %>%
+  filter(jahr == 2019) %>%
+  ggplot(aes(fill = cut(kaufkraft_pro_haushalt, 
+                      breaks = c(0, 25000, 35000, 50000, Inf), 
+                      labels = c("< 25000", "25000 - 35000", "35000 - 50000", "> 50000"), 
+                      drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("red", "orange", "white", "green")) +
+  labs(subtitle = "Kaufkraft pro Haushalt in € in 2019", fill = NULL) +
+  theme_bw() +
+  theme(
+    legend.position = "top",
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.margin = margin(t = 0, b = -5, l = 0, r = 0)
+  )
+
+
+plot_grid(plot7, plot8, labels = c('A', 'B'))
+
+#ggsave("./plots/kaufkraft_2010_2019_pascal.jpg", plot = last_plot())
+```
+
+
+### Verteilung nach LQ
+```{r}
+data_LQ_sf <- data_social_sf %>%
+  select(r1_id, jahr, arbeitslosenquote, anteil_auslaender, anzahl_haushalte, kaufkraft_pro_haushalt) %>%
+  group_by(jahr) %>%
+  filter(!is.na(anzahl_haushalte)) %>%
+  mutate(LQ_arbeitslose = arbeitslosenquote / weighted.mean(arbeitslosenquote, anzahl_haushalte, na.rm = TRUE),
+         LQ_auslaender = anteil_auslaender  / weighted.mean(anteil_auslaender, anzahl_haushalte, na.rm = TRUE),
+         .keep = c("unused")) %>%
+  ungroup()
+
+#LQ Arbeitslosenquote 2010
+
+plot1 <- data_LQ_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = cut(LQ_arbeitslose, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7")), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Arbeitslose 2010", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+#LQ Arbeitslosenquote 2019
+
+plot2 <- data_LQ_sf %>%
+  filter(jahr == 2019) %>%
+  ggplot(aes(fill = cut(LQ_arbeitslose, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Arbeitslose 2019", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot_grid(plot1, plot2, labels = c('A', 'B'))
+
+#ggsave("./plots/lq_arbeitslosenquote_2010_2019_pascal.jpg", plot = last_plot())
+```
+
+```{r}
+#LQ Ausländeranteil 2010
+
+plot5 <- data_LQ_sf %>%
+  filter(jahr == 2010) %>%
+  ggplot(aes(fill = cut(LQ_auslaender, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Ausländer 2010", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+#LQ Ausländeranteil 2019
+
+plot6 <- data_LQ_sf %>%
+  filter(jahr == 2019) %>%
+  ggplot(aes(fill = cut(LQ_auslaender, 
+                      breaks = c(0, 0.3, 0.7, 1.2, 1.7, Inf), 
+                      labels = c("<= 0.3", "0.3 - 0.7", "0.7 - 1.2", "1.2 - 1.7", ">= 1.7"), drop = TRUE), 
+       geometry = geom), linewidth = .1) +
+  geom_sf() +
+  scale_fill_manual(values = c("blue", "green", "white", "orange", "red")) +
+  labs(subtitle = "LQ Ausländer 2019", fill = NULL) +
+  theme_bw() +
+  theme(legend.position = "top",
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        legend.margin = margin(t = 0, b = -5, l = 0, r = 0))
+
+plot_grid(plot5, plot6, labels = c('A', 'B'))
+
+#ggsave("./plots/lq_auslaender_2010_2019_pascal.jpg", plot = last_plot())
+```
+
