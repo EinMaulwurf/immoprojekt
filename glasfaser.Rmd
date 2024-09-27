@@ -1,0 +1,62 @@
+---
+title: "auswertung.Rmd"
+output: 
+  #- github_document
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+# Libraries
+```{r message=FALSE}
+# Für Korrelationsmatrizen
+library(Hmisc)
+
+# Für schönere Latex-Tabellen
+library(stargazer)
+library(kableExtra)
+library(vtable)
+
+# Für schönere Plots
+library(ggpubr)
+library(ggrepel)
+library(gridExtra)
+library(cowplot)
+
+# Für schnelleres Einlesen von Daten
+library(vroom)
+
+# Für allgemeine Datenmanipulation und Plotten
+library(tidyverse)
+
+# Fürs Arbeiten mit Geodaten
+library(sf)
+```
+
+
+# Importieren der Daten
+Die Daten wurden im Dokument 'cleaning.Rmd' aufbereitet und abgespeichert.
+```{r, message=FALSE}
+data_rent <- vroom("./daten/data_rent.csv")
+data_social <- vroom("./daten/data_social.csv")
+
+inspire_grid_berlin <- st_read("./daten/inspire_grid_berlin.gpkg", quiet = TRUE)
+bezirksgrenzen_berlin <- st_read("./daten/bezirksgrenzen_berlin/bezirksgrenzen.shp", quiet = TRUE) %>%
+  st_transform("EPSG:3035")
+mauer_berlin <- st_read("./daten/Berliner_Mauer.geojson", quiet = TRUE)
+
+data_social_sf <- data_social %>%
+  left_join(inspire_grid_berlin %>% select(r1_id, geom), by = "r1_id") %>%
+  st_as_sf()
+
+readxl::read_xlsx("./daten/Berlin_LOR_Versorgungsdaten_Stand_2402.xlsx", sheet = "clean") %>%
+  janitor::clean_names()
+```
+
+# Auswertung
