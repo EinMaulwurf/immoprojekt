@@ -4,6 +4,10 @@ daten/Datensatz_Berlin_Social_new.csv
 daten/INSPIRE_Grid/**/*
 .DS_Store
 
+# Ignore sensitive data
+daten/data_social.csv
+daten/data_rent.csv
+
 # The following are standart options from a template
 # History files
 .Rhistory
