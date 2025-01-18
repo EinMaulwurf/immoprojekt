@@ -7,6 +7,7 @@ daten/INSPIRE_Grid/**/*
 # Ignore sensitive data
 daten/data_social.csv
 daten/data_rent.csv
+daten/database.duckdb
 
 # The following are standart options from a template
 # History files
